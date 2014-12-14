@@ -20,52 +20,135 @@ make[1]: Nothing to be done for `relocs'.
   LD      arch/x86/vdso/built-in.o
   LD      arch/x86/built-in.o
   CC [M]  drivers/net/xen-netback/xenbus.o
-drivers/net/xen-netback/xenbus.c: In function ‘xen_read_bandwidth’:
-drivers/net/xen-netback/xenbus.c:58:25: error: ‘e’ undeclared (first use in this function)
-  b = simple_strtoul(s, &e, 10);
-                         ^
-drivers/net/xen-netback/xenbus.c:58:25: note: each undeclared identifier is reported only once for each function it appears in
-drivers/net/xen-netback/xenbus.c: At top level:
-drivers/net/xen-netback/xenbus.c:71:12: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
- static int domain_number()
-            ^
-drivers/net/xen-netback/xenbus.c: In function ‘domain_number’:
-drivers/net/xen-netback/xenbus.c:75:8: error: ‘dev_list_node’ undeclared (first use in this function)
-  pd = &dev_list_node;
-        ^
-drivers/net/xen-netback/xenbus.c:76:13: error: ‘ddev_list_node’ undeclared (first use in this function)
-  for (pd = &ddev_list_node; *pd != NULL; pd = &(*pd)->next_in_list)
-             ^
-drivers/net/xen-netback/xenbus.c:76:53: error: dereferencing pointer to incomplete type
-  for (pd = &ddev_list_node; *pd != NULL; pd = &(*pd)->next_in_list)
-                                                     ^
-drivers/net/xen-netback/xenbus.c: At top level:
-drivers/net/xen-netback/xenbus.c:82:62: error: expected ‘;’, ‘,’ or ‘)’ before ‘&’ token
- static void xen_read_priority(struct xenbus_device *dev, int &priority)
-                                                              ^
-drivers/net/xen-netback/xenbus.c: In function ‘xen_net_read_average’:
-drivers/net/xen-netback/xenbus.c:346:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-  char *averageset = "true";
-  ^
-drivers/net/xen-netback/xenbus.c:347:2: error: implicit declaration of function ‘_stricmp’ [-Werror=implicit-function-declaration]
-  if (_stricmp(averagestr, averageset) == 0)
-  ^
-drivers/net/xen-netback/xenbus.c: In function ‘connect’:
-drivers/net/xen-netback/xenbus.c:475:2: error: implicit declaration of function ‘xen_read_priority’ [-Werror=implicit-function-declaration]
-  err = xen_read_priority(dev, be->vif->priority); 
-  ^
-drivers/net/xen-netback/xenbus.c: At top level:
-drivers/net/xen-netback/xenbus.c:46:13: warning: ‘xen_read_bandwidth’ defined but not used [-Wunused-function]
+drivers/net/xen-netback/xenbus.c:50:13: warning: ‘xen_read_bandwidth’ defined but not used [-Wunused-function]
  static void xen_read_bandwidth(struct xenbus_device *dev)
              ^
-drivers/net/xen-netback/xenbus.c:71:12: warning: ‘domain_number’ defined but not used [-Wunused-function]
- static int domain_number()
+  CC [M]  drivers/net/xen-netback/interface.o
+drivers/net/xen-netback/interface.c: In function ‘xenvif_priority_readjust’:
+drivers/net/xen-netback/interface.c:279:2: error: implicit declaration of function ‘get_vif_priority’ [-Werror=implicit-function-declaration]
+  int priority = get_vif_priority(vif);
+  ^
+drivers/net/xen-netback/interface.c:279:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:284:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  unsigned long next_time = vif->credit_timeout.expires + msecs_to_jiffies(vif->credit_usec / 10);
+  ^
+drivers/net/xen-netback/interface.c: At top level:
+drivers/net/xen-netback/interface.c:289:12: error: static declaration of ‘get_vif_priority’ follows non-static declaration
+ static int get_vif_priority(struct xenvif *vif){
             ^
-drivers/net/xen-netback/xenbus.c:340:13: warning: ‘xen_net_read_average’ defined but not used [-Wunused-function]
- static bool xen_net_read_average(struct xenbus_device *dev)
+drivers/net/xen-netback/interface.c:279:17: note: previous implicit declaration of ‘get_vif_priority’ was here
+  int priority = get_vif_priority(vif);
+                 ^
+drivers/net/xen-netback/interface.c: In function ‘get_vif_priority’:
+drivers/net/xen-netback/interface.c:290:2: error: implicit declaration of function ‘is_steady’ [-Werror=implicit-function-declaration]
+  if(is_steady(vif))
+  ^
+drivers/net/xen-netback/interface.c:292:2: error: implicit declaration of function ‘is_steady_rise’ [-Werror=implicit-function-declaration]
+  if(is_steady_rise(vif))
+  ^
+drivers/net/xen-netback/interface.c:294:2: error: implicit declaration of function ‘is_single_burst’ [-Werror=implicit-function-declaration]
+  if(is_single_burst(vif))
+  ^
+drivers/net/xen-netback/interface.c: At top level:
+drivers/net/xen-netback/interface.c:300:13: error: conflicting types for ‘is_steady’
+ static bool is_steady(struct xenvif *vif){
+             ^
+drivers/net/xen-netback/interface.c:290:5: note: previous implicit declaration of ‘is_steady’ was here
+  if(is_steady(vif))
+     ^
+drivers/net/xen-netback/interface.c: In function ‘is_steady’:
+drivers/net/xen-netback/interface.c:305:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  struct list_head *plist;
+  ^
+drivers/net/xen-netback/interface.c:317:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   float rate = (float) ((max - min) / max);
+   ^
+drivers/net/xen-netback/interface.c: At top level:
+drivers/net/xen-netback/interface.c:330:13: error: conflicting types for ‘is_steady_rise’
+ static bool is_steady_rise(struct xenvif *vif){
+             ^
+drivers/net/xen-netback/interface.c:292:5: note: previous implicit declaration of ‘is_steady_rise’ was here
+  if(is_steady_rise(vif))
+     ^
+drivers/net/xen-netback/interface.c: In function ‘is_steady_rise’:
+drivers/net/xen-netback/interface.c:353:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   float rate = (float) ((max - min) / max);
+   ^
+drivers/net/xen-netback/interface.c:369:4: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+    float slope = (float) ((margin_val - val) / (margin_time - ntime));
+    ^
+drivers/net/xen-netback/interface.c: At top level:
+drivers/net/xen-netback/interface.c:382:13: error: conflicting types for ‘is_single_burst’
+ static bool is_single_burst(struct xenvif *vif){
+             ^
+drivers/net/xen-netback/interface.c:294:5: note: previous implicit declaration of ‘is_single_burst’ was here
+  if(is_single_burst(vif))
+     ^
+drivers/net/xen-netback/interface.c: In function ‘is_single_burst’:
+drivers/net/xen-netback/interface.c:393:3: error: incompatible type for argument 1 of ‘list_add_tail’
+   list_add_tail(node->list, req_size_list_copy);
+   ^
+In file included from include/linux/module.h:9:0,
+                 from drivers/net/xen-netback/common.h:32,
+                 from drivers/net/xen-netback/interface.c:31:
+include/linux/list.h:74:20: note: expected ‘struct list_head *’ but argument is of type ‘struct list_head’
+ static inline void list_add_tail(struct list_head *new, struct list_head *head)
+                    ^
+drivers/net/xen-netback/interface.c:393:3: error: incompatible type for argument 2 of ‘list_add_tail’
+   list_add_tail(node->list, req_size_list_copy);
+   ^
+In file included from include/linux/module.h:9:0,
+                 from drivers/net/xen-netback/common.h:32,
+                 from drivers/net/xen-netback/interface.c:31:
+include/linux/list.h:74:20: note: expected ‘struct list_head *’ but argument is of type ‘struct list_head’
+ static inline void list_add_tail(struct list_head *new, struct list_head *head)
+                    ^
+drivers/net/xen-netback/interface.c:395:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   uint16_t val = node->val;
+   ^
+drivers/net/xen-netback/interface.c:402:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  int valley_baseline = max * 0.03;
+  ^
+In file included from include/linux/module.h:9:0,
+                 from drivers/net/xen-netback/common.h:32,
+                 from drivers/net/xen-netback/interface.c:31:
+include/linux/list.h:397:19: error: invalid type argument of ‘->’ (have ‘struct list_head’)
+  for (pos = (head)->next; pos != (head); pos = pos->next)
+                   ^
+drivers/net/xen-netback/interface.c:418:2: note: in expansion of macro ‘list_for_each’
+  list_for_each(qlist, req_size_list_copy) {
+  ^
+include/linux/list.h:397:31: error: invalid operands to binary != (have ‘struct list_head *’ and ‘struct list_head’)
+  for (pos = (head)->next; pos != (head); pos = pos->next)
+                               ^
+drivers/net/xen-netback/interface.c:418:2: note: in expansion of macro ‘list_for_each’
+  list_for_each(qlist, req_size_list_copy) {
+  ^
+drivers/net/xen-netback/interface.c:437:36: error: ‘interval_baseline’ undeclared (first use in this function)
+     if(current_interval_duration > interval_baseline)
+                                    ^
+drivers/net/xen-netback/interface.c:437:36: note: each undeclared identifier is reported only once for each function it appears in
+drivers/net/xen-netback/interface.c:457:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int interval_baseline = current_peak_duration * 0.05;
+     ^
+drivers/net/xen-netback/interface.c:497:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  int peak_gap_baseline = peak_duration_max * 0.1;
+  ^
+drivers/net/xen-netback/interface.c: At top level:
+drivers/net/xen-netback/interface.c:289:12: warning: ‘get_vif_priority’ defined but not used [-Wunused-function]
+ static int get_vif_priority(struct xenvif *vif){
+            ^
+drivers/net/xen-netback/interface.c:300:13: warning: ‘is_steady’ defined but not used [-Wunused-function]
+ static bool is_steady(struct xenvif *vif){
+             ^
+drivers/net/xen-netback/interface.c:330:13: warning: ‘is_steady_rise’ defined but not used [-Wunused-function]
+ static bool is_steady_rise(struct xenvif *vif){
+             ^
+drivers/net/xen-netback/interface.c:382:13: warning: ‘is_single_burst’ defined but not used [-Wunused-function]
+ static bool is_single_burst(struct xenvif *vif){
              ^
 cc1: some warnings being treated as errors
-make[3]: *** [drivers/net/xen-netback/xenbus.o] Error 1
+make[3]: *** [drivers/net/xen-netback/interface.o] Error 1
 make[2]: *** [drivers/net/xen-netback] Error 2
 make[1]: *** [drivers/net] Error 2
 make: *** [drivers] Error 2
