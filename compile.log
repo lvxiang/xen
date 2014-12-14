@@ -20,65 +20,14 @@ make[1]: Nothing to be done for `relocs'.
   LD      arch/x86/vdso/built-in.o
   LD      arch/x86/built-in.o
   CC [M]  drivers/net/xen-netback/netback.o
-drivers/net/xen-netback/netback.c: In function ‘xen_netbk_add_xenvif’:
-drivers/net/xen-netback/netback.c:204:2: error: incompatible type for argument 1 of ‘INIT_LIST_HEAD’
-  INIT_LIST_HEAD(vif->request_size_list)
-  ^
-In file included from include/linux/module.h:9:0,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/netback.c:35:
-include/linux/list.h:24:20: note: expected ‘struct list_head *’ but argument is of type ‘struct list_head’
- static inline void INIT_LIST_HEAD(struct list_head *list)
-                    ^
-drivers/net/xen-netback/netback.c:206:1: error: expected ‘;’ before ‘}’ token
- }
- ^
-drivers/net/xen-netback/netback.c: In function ‘poll_net_schedule_list’:
-drivers/net/xen-netback/netback.c:864:60: error: invalid operands to binary * (have ‘int *’ and ‘int *’)
-  if (&netbk->queue_req_count >= (&netbk->current_priority) * (&netbk->queue_num_unit)){
-                                                            ^
-drivers/net/xen-netback/netback.c:865:61: error: invalid operands to binary % (have ‘int *’ and ‘int’)
-   &netbk->current_priority = (&netbk->current_priority + 1) % 5;
-                                                             ^
-drivers/net/xen-netback/netback.c:866:27: error: lvalue required as left operand of assignment
-   &netbk->queue_req_count = 0;
-                           ^
-In file included from include/linux/cache.h:4:0,
-                 from include/linux/time.h:4,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/netback.c:35:
-drivers/net/xen-netback/netback.c:868:55: error: array subscript is not an integer
-  vif = list_first_entry(&netbk->priority_schedule_list[&netbk->current_priority - 1], struct xenvif, schedule_list);
-                                                       ^
-include/linux/kernel.h:782:49: note: in definition of macro ‘container_of’
-  const typeof( ((type *)0)->member ) *__mptr = (ptr); \
-                                                 ^
-include/linux/list.h:362:2: note: in expansion of macro ‘list_entry’
-  list_entry((ptr)->next, type, member)
-  ^
-drivers/net/xen-netback/netback.c:868:8: note: in expansion of macro ‘list_first_entry’
-  vif = list_first_entry(&netbk->priority_schedule_list[&netbk->current_priority - 1], struct xenvif, schedule_list);
-        ^
-drivers/net/xen-netback/netback.c:869:2: error: lvalue required as unary ‘&’ operand
-  &netbk->queue_req_count++;
-  ^
 drivers/net/xen-netback/netback.c: In function ‘xen_netbk_schedule_xenvif’:
-drivers/net/xen-netback/netback.c:892:30: error: ‘struct xen_netif_tx_back_ring’ has no member named ‘size’
-  uint16_t req_size = &vif->tx.size;
-                              ^
-drivers/net/xen-netback/netback.c:907:68: error: array subscript is not an integer
-   list_add_tail(&vif->schedule_list, &netbk->priority_schedule_list[&vif->priority - 1]);
-                                                                    ^
+drivers/net/xen-netback/netback.c:892:29: error: ‘struct xen_netif_tx_back_ring’ has no member named ‘size’
+  uint16_t req_size = vif->tx.size;
+                             ^
 drivers/net/xen-netback/netback.c: In function ‘tx_credit_exceeded’:
 drivers/net/xen-netback/netback.c:1452:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   unsigned long T_alloc = msecs_to_jiffies(vif->credit_usec / 1000);
   ^
-drivers/net/xen-netback/netback.c:1454:26: error: ‘credit_initial’ undeclared (first use in this function)
-  unsigned long C_alloc = credit_initial;
-                          ^
-drivers/net/xen-netback/netback.c:1454:26: note: each undeclared identifier is reported only once for each function it appears in
 In file included from include/linux/cache.h:4:0,
                  from include/linux/time.h:4,
                  from include/linux/stat.h:18,
@@ -97,13 +46,6 @@ include/linux/kernel.h:661:17: warning: comparison of distinct pointer types lac
 drivers/net/xen-netback/netback.c:1497:30: note: in expansion of macro ‘min’
    unsigned long add_credit = min((long) (((C_actu * T_alloc) / T_actu - C_actu) / 2), credit_public);
                               ^
-drivers/net/xen-netback/netback.c: In function ‘xen_netbk_tx_build_gops’:
-drivers/net/xen-netback/netback.c:1557:62: error: invalid operands to binary % (have ‘int *’ and ‘int’)
-    &netbk->current_priority = (&netbk->current_priority + 1) % 5;
-                                                              ^
-drivers/net/xen-netback/netback.c:1558:28: error: lvalue required as left operand of assignment
-    &netbk->queue_req_count = 0;
-                            ^
 make[3]: *** [drivers/net/xen-netback/netback.o] Error 1
 make[2]: *** [drivers/net/xen-netback] Error 2
 make[1]: *** [drivers/net] Error 2
