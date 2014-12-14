@@ -85,7 +85,16 @@ static int domain_number()
 }
 */
 
-static void xen_read_priority(struct xenbus_device *dev, int *priority)
+static int atoi(char *array){
+	int result = 0;
+	while(*array != '\0'){
+		result += 10 * result + (*array - '0');
+		array ++;
+	}
+	return result;
+}
+
+static int xen_read_priority(struct xenbus_device *dev, int *priority)
 {	
 	unsigned int b;	
 	char *prioritystr;		
@@ -93,11 +102,12 @@ static void xen_read_priority(struct xenbus_device *dev, int *priority)
 	//read priority from config	
 	prioritystr = xenbus_read(XBT_NIL, dev->nodename, "priority", NULL);	
 	if (IS_ERR(prioritystr))		
-		return;	b = atoi(prioritystr);
-	
+		return -ENOENT;	
+
+	b = atoi(prioritystr);
 	*priority = b;	
 	kfree(prioritystr);	
-	return;
+	return 0;
 }
 /* mlr-end */
 
