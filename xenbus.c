@@ -22,7 +22,10 @@
 #include "common.h"
 
 /* mlr-begin : added include */
-#include <string.h>#include <stdlib.h>
+/*
+#include <string.h>
+#include <stdlib.h>
+*/
 /* mlr-end */
 
 /* mlr-begin : added variable */
@@ -46,7 +49,7 @@ static void unregister_hotplug_status_watch(struct backend_info *be);
 /* mlr-begin : xen_read_bandwidth, domain_number */
 static void xen_read_bandwidth(struct xenbus_device *dev)
 {
-	char *s;
+	char *s, *e;
 	unsigned long b;
 	char *bandwidthstr;
 	
@@ -69,6 +72,7 @@ fail:
 	kfree(bandwidthstr);
 }
 
+/*
 static int domain_number()
 {
 	struct domain_device **pd;
@@ -79,8 +83,9 @@ static int domain_number()
 	return count;
 
 }
+*/
 
-static void xen_read_priority(struct xenbus_device *dev, int &priority)
+static void xen_read_priority(struct xenbus_device *dev, int *priority)
 {	
 	unsigned int b;	
 	char *prioritystr;		
@@ -90,7 +95,7 @@ static void xen_read_priority(struct xenbus_device *dev, int &priority)
 	if (IS_ERR(prioritystr))		
 		return;	b = atoi(prioritystr);
 	
-	priority = b;	
+	*priority = b;	
 	kfree(prioritystr);	
 	return;
 }
@@ -338,6 +343,7 @@ static void frontend_changed(struct xenbus_device *dev,
 }
 
 /* mlr-begin : check whether average allocation is set */
+/*
 static bool xen_net_read_average(struct xenbus_device *dev)
 {
 	char *averagestr;
@@ -350,6 +356,7 @@ static bool xen_net_read_average(struct xenbus_device *dev)
 	else
 		return false;
 }
+*/
 /* mlr-end */
 
 
@@ -473,7 +480,7 @@ static void connect(struct backend_info *be)
 	}
 
 	/* mlr-begin :  read the priority the vif*/		
-	err = xen_read_priority(dev, be->vif->priority);	
+	err = xen_read_priority(dev, &(be->vif->priority));	
 	if (err) {		
 		xenbus_dev_fatal(dev, err, "parsing %s/priority", dev->nodename);		
 		return;	
