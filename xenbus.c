@@ -381,6 +381,7 @@ static void xen_net_read_rate(struct xenbus_device *dev,
 		goto fail;
 
 	/* mlr-begin : check for average */
+	/**
 	if (xen_net_read_average)
 	{
 		int dn = domain_number();		
@@ -388,6 +389,7 @@ static void xen_net_read_rate(struct xenbus_device *dev,
 		*bytes = (long) total_credit/dn;
 	}
 	else
+	*/
 		*bytes = b;
 
 	*initial = *bytes;
