@@ -269,34 +269,6 @@ static const struct net_device_ops xenvif_netdev_ops = {
 };
 
 /* mlr-begin */
-// priority timer callback, readjust the priority of the vif
-static void xenvif_priority_readjust(unsigned long data)
-{
-	struct xenvif *vif = (struct xenvif *)data;
-	//Timer could already be pending in rare cases.
-	if (timer_pending(&vif->priority_timeout))
-		return;
-	int priority = get_vif_priority(vif);
-	vif->priority = priority;
-	//clean up the request size list for next timer
-	list_del_init(&vif->request_size_list);
-	// the time interval of reajusting vif's priority is set to 100 times the interval of reallocating credits
-	unsigned long next_time = vif->credit_timeout.expires + msecs_to_jiffies(vif->credit_usec / 10);
-	mod_timer(&vif->priority_timeout, next_time);
-}
-
-// TODO: get the current priority of the vif based on its bandwidth usage model
-static int get_vif_priority(struct xenvif *vif){
-	if(is_steady(vif))
-		return 5;
-	if(is_steady_rise(vif))
-		return 4;
-	if(is_single_burst(vif))
-		return 3;
-	
-	return 1;
-}
-
 static bool is_steady(struct xenvif *vif){
 	//empty list, return true
 	if(list_empty(&vif->request_size_list))
@@ -390,7 +362,7 @@ static bool is_single_burst(struct xenvif *vif){
 	struct list_head *plist;
 	list_for_each(plist, &vif->request_size_list) {
     	struct int_list_node *node = list_entry(plist, struct int_list_node, list);
-		list_add_tail(node->list, req_size_list_copy);
+		list_add_tail(&node->list, &req_size_list_copy);
 		
 		uint16_t val = node->val;
         if(val > max)
@@ -434,6 +406,7 @@ static bool is_single_burst(struct xenvif *vif){
 			if(! is_peak){
 				interval_start = node->time;
 				current_interval_duration = interval_end - interval_start;
+				int interval_baseline = current_peak_duration * 0.05;
 				if(current_interval_duration > interval_baseline)
 					return false;
 				
@@ -500,6 +473,35 @@ static bool is_single_burst(struct xenvif *vif){
 	
 	return true;
 }
+
+// TODO: get the current priority of the vif based on its bandwidth usage model
+static int get_vif_priority(struct xenvif *vif){
+	if(is_steady(vif))
+		return 5;
+	if(is_steady_rise(vif))
+		return 4;
+	if(is_single_burst(vif))
+		return 3;
+	
+	return 1;
+}
+
+// priority timer callback, readjust the priority of the vif
+static void xenvif_priority_readjust(unsigned long data)
+{
+	struct xenvif *vif = (struct xenvif *)data;
+	//Timer could already be pending in rare cases.
+	if (timer_pending(&vif->priority_timeout))
+		return;
+	int priority = get_vif_priority(vif);
+	vif->priority = priority;
+	//clean up the request size list for next timer
+	list_del_init(&vif->request_size_list);
+	// the time interval of reajusting vif's priority is set to 100 times the interval of reallocating credits
+	unsigned long next_time = vif->credit_timeout.expires + msecs_to_jiffies(vif->credit_usec / 10);
+	mod_timer(&vif->priority_timeout, next_time);
+}
+
 /* mlr-end */
 
 struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
