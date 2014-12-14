@@ -889,7 +889,7 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	struct xen_netbk *netbk = vif->netbk;
 
 	/* mlr-begin : record the size of the request */
-	uint16_t req_size = vif->tx.size;
+	uint16_t req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
 	struct int_list_node node;
 	node.val = req_size;
 	node.time = jiffies;
