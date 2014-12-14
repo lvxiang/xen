@@ -19,34 +19,53 @@ make[1]: Nothing to be done for `relocs'.
   VDSOSYM arch/x86/vdso/vdso32-syms.lds
   LD      arch/x86/vdso/built-in.o
   LD      arch/x86/built-in.o
-  CC [M]  drivers/net/xen-netback/netback.o
-drivers/net/xen-netback/netback.c: In function ‘xen_netbk_schedule_xenvif’:
-drivers/net/xen-netback/netback.c:892:29: error: ‘struct xen_netif_tx_back_ring’ has no member named ‘size’
-  uint16_t req_size = vif->tx.size;
-                             ^
-drivers/net/xen-netback/netback.c: In function ‘tx_credit_exceeded’:
-drivers/net/xen-netback/netback.c:1452:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-  unsigned long T_alloc = msecs_to_jiffies(vif->credit_usec / 1000);
+  CC [M]  drivers/net/xen-netback/xenbus.o
+drivers/net/xen-netback/xenbus.c: In function ‘xen_read_bandwidth’:
+drivers/net/xen-netback/xenbus.c:58:25: error: ‘e’ undeclared (first use in this function)
+  b = simple_strtoul(s, &e, 10);
+                         ^
+drivers/net/xen-netback/xenbus.c:58:25: note: each undeclared identifier is reported only once for each function it appears in
+drivers/net/xen-netback/xenbus.c: At top level:
+drivers/net/xen-netback/xenbus.c:71:12: warning: function declaration isn’t a prototype [-Wstrict-prototypes]
+ static int domain_number()
+            ^
+drivers/net/xen-netback/xenbus.c: In function ‘domain_number’:
+drivers/net/xen-netback/xenbus.c:75:8: error: ‘dev_list_node’ undeclared (first use in this function)
+  pd = &dev_list_node;
+        ^
+drivers/net/xen-netback/xenbus.c:76:13: error: ‘ddev_list_node’ undeclared (first use in this function)
+  for (pd = &ddev_list_node; *pd != NULL; pd = &(*pd)->next_in_list)
+             ^
+drivers/net/xen-netback/xenbus.c:76:53: error: dereferencing pointer to incomplete type
+  for (pd = &ddev_list_node; *pd != NULL; pd = &(*pd)->next_in_list)
+                                                     ^
+drivers/net/xen-netback/xenbus.c: At top level:
+drivers/net/xen-netback/xenbus.c:82:62: error: expected ‘;’, ‘,’ or ‘)’ before ‘&’ token
+ static void xen_read_priority(struct xenbus_device *dev, int &priority)
+                                                              ^
+drivers/net/xen-netback/xenbus.c: In function ‘xen_net_read_average’:
+drivers/net/xen-netback/xenbus.c:346:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  char *averageset = "true";
   ^
-In file included from include/linux/cache.h:4:0,
-                 from include/linux/time.h:4,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/netback.c:35:
-include/linux/kernel.h:661:17: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-  (void) (&_min1 == &_min2);  \
-                 ^
-drivers/net/xen-netback/netback.c:1479:33: note: in expansion of macro ‘min’
-   unsigned long reduce_credit = min((long) ((C_actu - C_alloc) / 2), 0 - credit_public);
-                                 ^
-include/linux/kernel.h:661:17: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-  (void) (&_min1 == &_min2);  \
-                 ^
-drivers/net/xen-netback/netback.c:1497:30: note: in expansion of macro ‘min’
-   unsigned long add_credit = min((long) (((C_actu * T_alloc) / T_actu - C_actu) / 2), credit_public);
-                              ^
-make[3]: *** [drivers/net/xen-netback/netback.o] Error 1
+drivers/net/xen-netback/xenbus.c:347:2: error: implicit declaration of function ‘_stricmp’ [-Werror=implicit-function-declaration]
+  if (_stricmp(averagestr, averageset) == 0)
+  ^
+drivers/net/xen-netback/xenbus.c: In function ‘connect’:
+drivers/net/xen-netback/xenbus.c:475:2: error: implicit declaration of function ‘xen_read_priority’ [-Werror=implicit-function-declaration]
+  err = xen_read_priority(dev, be->vif->priority); 
+  ^
+drivers/net/xen-netback/xenbus.c: At top level:
+drivers/net/xen-netback/xenbus.c:46:13: warning: ‘xen_read_bandwidth’ defined but not used [-Wunused-function]
+ static void xen_read_bandwidth(struct xenbus_device *dev)
+             ^
+drivers/net/xen-netback/xenbus.c:71:12: warning: ‘domain_number’ defined but not used [-Wunused-function]
+ static int domain_number()
+            ^
+drivers/net/xen-netback/xenbus.c:340:13: warning: ‘xen_net_read_average’ defined but not used [-Wunused-function]
+ static bool xen_net_read_average(struct xenbus_device *dev)
+             ^
+cc1: some warnings being treated as errors
+make[3]: *** [drivers/net/xen-netback/xenbus.o] Error 1
 make[2]: *** [drivers/net/xen-netback] Error 2
 make[1]: *** [drivers/net] Error 2
 make: *** [drivers] Error 2
