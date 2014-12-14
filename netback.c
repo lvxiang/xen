@@ -201,7 +201,7 @@ void xen_netbk_add_xenvif(struct xenvif *vif)
 	atomic_inc(&netbk->netfront_count);
 
 	/* mlr-begin : init request size list */
-	INIT_LIST_HEAD(vif->request_size_list)
+	INIT_LIST_HEAD(&vif->request_size_list);
 	/* mlr-end */
 }
 
@@ -861,12 +861,12 @@ static struct xenvif *poll_net_schedule_list(struct xen_netbk *netbk)
 		goto out;
 	
 	/* mlr-begin : poll vif from the current priority schedule list */
-	if (&netbk->queue_req_count >= (&netbk->current_priority) * (&netbk->queue_num_unit)){
-		&netbk->current_priority = (&netbk->current_priority + 1) % 5;
-		&netbk->queue_req_count = 0;
+	if (netbk->queue_req_count >= (netbk->current_priority) * (netbk->queue_num_unit)){
+		netbk->current_priority = (netbk->current_priority + 1) % 5;
+		netbk->queue_req_count = 0;
 	}
-	vif = list_first_entry(&netbk->priority_schedule_list[&netbk->current_priority - 1], struct xenvif, schedule_list);
-	&netbk->queue_req_count++;
+	vif = list_first_entry(&netbk->priority_schedule_list[netbk->current_priority - 1], struct xenvif, schedule_list);
+	netbk->queue_req_count++;
 	/* mlr-end */
 	/* original: 
 	vif = list_first_entry(&netbk->net_schedule_list,
@@ -889,7 +889,7 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	struct xen_netbk *netbk = vif->netbk;
 
 	/* mlr-begin : record the size of the request */
-	uint16_t req_size = &vif->tx.size;
+	uint16_t req_size = vif->tx.size;
 	struct int_list_node node;
 	node.val = req_size;
 	node.time = jiffies;
@@ -904,7 +904,7 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	    likely(xenvif_schedulable(vif))) {
 		list_add_tail(&vif->schedule_list, &netbk->net_schedule_list);
 		/* mlr-begin : add the vif to its priority schedule list */
-		list_add_tail(&vif->schedule_list, &netbk->priority_schedule_list[&vif->priority - 1]);
+		list_add_tail(&vif->schedule_list, &netbk->priority_schedule_list[vif->priority - 1]);
 		/* mlr-end */
 		xenvif_get(vif);
 	}
@@ -1451,7 +1451,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	/* mlr-begin : adjust vif->credit_bytes according to usage condition */
 	unsigned long T_alloc = msecs_to_jiffies(vif->credit_usec / 1000);
 	unsigned long T_actu = now - vif->credit_timeout.expires;
-	unsigned long C_alloc = credit_initial;
+	unsigned long C_alloc = vif->credit_initial;
 	unsigned long C_actu = vif->credit_bytes;
 
 	//low credit vm store spare credit to public_credit
@@ -1554,8 +1554,8 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
 
 		/* mlr-begin : switch to next priority schedule list if current priority list has no vif left */
 		if (!vif){
-			&netbk->current_priority = (&netbk->current_priority + 1) % 5;
-			&netbk->queue_req_count = 0;
+			netbk->current_priority = (netbk->current_priority + 1) % 5;
+			netbk->queue_req_count = 0;
 			continue;
 		}
 		/* mlr-end */
