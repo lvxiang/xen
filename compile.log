@@ -19,136 +19,103 @@ make[1]: Nothing to be done for `relocs'.
   VDSOSYM arch/x86/vdso/vdso32-syms.lds
   LD      arch/x86/vdso/built-in.o
   LD      arch/x86/built-in.o
-  CC [M]  drivers/net/xen-netback/xenbus.o
-drivers/net/xen-netback/xenbus.c:50:13: warning: ‘xen_read_bandwidth’ defined but not used [-Wunused-function]
- static void xen_read_bandwidth(struct xenbus_device *dev)
-             ^
   CC [M]  drivers/net/xen-netback/interface.o
-drivers/net/xen-netback/interface.c: In function ‘xenvif_priority_readjust’:
-drivers/net/xen-netback/interface.c:279:2: error: implicit declaration of function ‘get_vif_priority’ [-Werror=implicit-function-declaration]
-  int priority = get_vif_priority(vif);
-  ^
-drivers/net/xen-netback/interface.c:279:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-drivers/net/xen-netback/interface.c:284:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-  unsigned long next_time = vif->credit_timeout.expires + msecs_to_jiffies(vif->credit_usec / 10);
-  ^
-drivers/net/xen-netback/interface.c: At top level:
-drivers/net/xen-netback/interface.c:289:12: error: static declaration of ‘get_vif_priority’ follows non-static declaration
- static int get_vif_priority(struct xenvif *vif){
-            ^
-drivers/net/xen-netback/interface.c:279:17: note: previous implicit declaration of ‘get_vif_priority’ was here
-  int priority = get_vif_priority(vif);
-                 ^
-drivers/net/xen-netback/interface.c: In function ‘get_vif_priority’:
-drivers/net/xen-netback/interface.c:290:2: error: implicit declaration of function ‘is_steady’ [-Werror=implicit-function-declaration]
-  if(is_steady(vif))
-  ^
-drivers/net/xen-netback/interface.c:292:2: error: implicit declaration of function ‘is_steady_rise’ [-Werror=implicit-function-declaration]
-  if(is_steady_rise(vif))
-  ^
-drivers/net/xen-netback/interface.c:294:2: error: implicit declaration of function ‘is_single_burst’ [-Werror=implicit-function-declaration]
-  if(is_single_burst(vif))
-  ^
-drivers/net/xen-netback/interface.c: At top level:
-drivers/net/xen-netback/interface.c:300:13: error: conflicting types for ‘is_steady’
- static bool is_steady(struct xenvif *vif){
-             ^
-drivers/net/xen-netback/interface.c:290:5: note: previous implicit declaration of ‘is_steady’ was here
-  if(is_steady(vif))
-     ^
 drivers/net/xen-netback/interface.c: In function ‘is_steady’:
-drivers/net/xen-netback/interface.c:305:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:277:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   struct list_head *plist;
   ^
-drivers/net/xen-netback/interface.c:317:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:289:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
    float rate = (float) ((max - min) / max);
    ^
-drivers/net/xen-netback/interface.c: At top level:
-drivers/net/xen-netback/interface.c:330:13: error: conflicting types for ‘is_steady_rise’
- static bool is_steady_rise(struct xenvif *vif){
-             ^
-drivers/net/xen-netback/interface.c:292:5: note: previous implicit declaration of ‘is_steady_rise’ was here
-  if(is_steady_rise(vif))
-     ^
 drivers/net/xen-netback/interface.c: In function ‘is_steady_rise’:
-drivers/net/xen-netback/interface.c:353:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:325:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
    float rate = (float) ((max - min) / max);
    ^
-drivers/net/xen-netback/interface.c:369:4: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:341:4: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
     float slope = (float) ((margin_val - val) / (margin_time - ntime));
     ^
-drivers/net/xen-netback/interface.c: At top level:
-drivers/net/xen-netback/interface.c:382:13: error: conflicting types for ‘is_single_burst’
- static bool is_single_burst(struct xenvif *vif){
-             ^
-drivers/net/xen-netback/interface.c:294:5: note: previous implicit declaration of ‘is_single_burst’ was here
-  if(is_single_burst(vif))
-     ^
 drivers/net/xen-netback/interface.c: In function ‘is_single_burst’:
-drivers/net/xen-netback/interface.c:393:3: error: incompatible type for argument 1 of ‘list_add_tail’
-   list_add_tail(node->list, req_size_list_copy);
-   ^
-In file included from include/linux/module.h:9:0,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/interface.c:31:
-include/linux/list.h:74:20: note: expected ‘struct list_head *’ but argument is of type ‘struct list_head’
- static inline void list_add_tail(struct list_head *new, struct list_head *head)
-                    ^
-drivers/net/xen-netback/interface.c:393:3: error: incompatible type for argument 2 of ‘list_add_tail’
-   list_add_tail(node->list, req_size_list_copy);
-   ^
-In file included from include/linux/module.h:9:0,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/interface.c:31:
-include/linux/list.h:74:20: note: expected ‘struct list_head *’ but argument is of type ‘struct list_head’
- static inline void list_add_tail(struct list_head *new, struct list_head *head)
-                    ^
-drivers/net/xen-netback/interface.c:395:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:367:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
    uint16_t val = node->val;
    ^
-drivers/net/xen-netback/interface.c:402:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:374:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   int valley_baseline = max * 0.03;
   ^
-In file included from include/linux/module.h:9:0,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/interface.c:31:
-include/linux/list.h:397:19: error: invalid type argument of ‘->’ (have ‘struct list_head’)
-  for (pos = (head)->next; pos != (head); pos = pos->next)
-                   ^
-drivers/net/xen-netback/interface.c:418:2: note: in expansion of macro ‘list_for_each’
-  list_for_each(qlist, req_size_list_copy) {
-  ^
-include/linux/list.h:397:31: error: invalid operands to binary != (have ‘struct list_head *’ and ‘struct list_head’)
-  for (pos = (head)->next; pos != (head); pos = pos->next)
-                               ^
-drivers/net/xen-netback/interface.c:418:2: note: in expansion of macro ‘list_for_each’
-  list_for_each(qlist, req_size_list_copy) {
-  ^
-drivers/net/xen-netback/interface.c:437:36: error: ‘interval_baseline’ undeclared (first use in this function)
-     if(current_interval_duration > interval_baseline)
-                                    ^
-drivers/net/xen-netback/interface.c:437:36: note: each undeclared identifier is reported only once for each function it appears in
-drivers/net/xen-netback/interface.c:457:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:409:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
      int interval_baseline = current_peak_duration * 0.05;
      ^
-drivers/net/xen-netback/interface.c:497:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/interface.c:430:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     int interval_baseline = current_peak_duration * 0.05;
+     ^
+drivers/net/xen-netback/interface.c:470:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   int peak_gap_baseline = peak_duration_max * 0.1;
   ^
-drivers/net/xen-netback/interface.c: At top level:
-drivers/net/xen-netback/interface.c:289:12: warning: ‘get_vif_priority’ defined but not used [-Wunused-function]
- static int get_vif_priority(struct xenvif *vif){
-            ^
-drivers/net/xen-netback/interface.c:300:13: warning: ‘is_steady’ defined but not used [-Wunused-function]
- static bool is_steady(struct xenvif *vif){
-             ^
-drivers/net/xen-netback/interface.c:330:13: warning: ‘is_steady_rise’ defined but not used [-Wunused-function]
- static bool is_steady_rise(struct xenvif *vif){
-             ^
-drivers/net/xen-netback/interface.c:382:13: warning: ‘is_single_burst’ defined but not used [-Wunused-function]
- static bool is_single_burst(struct xenvif *vif){
-             ^
-cc1: some warnings being treated as errors
-make[3]: *** [drivers/net/xen-netback/interface.o] Error 1
-make[2]: *** [drivers/net/xen-netback] Error 2
-make[1]: *** [drivers/net] Error 2
-make: *** [drivers] Error 2
+drivers/net/xen-netback/interface.c: In function ‘xenvif_priority_readjust’:
+drivers/net/xen-netback/interface.c:496:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  int priority = get_vif_priority(vif);
+  ^
+drivers/net/xen-netback/interface.c:501:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  unsigned long next_time = vif->credit_timeout.expires + msecs_to_jiffies(vif->credit_usec / 10);
+  ^
+drivers/net/xen-netback/interface.c:471:23: warning: ‘peak_duration_min’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  if(peak_duration_max - peak_duration_min > peak_gap_baseline)
+                       ^
+drivers/net/xen-netback/interface.c:385:16: note: ‘peak_duration_min’ was declared here
+  unsigned long peak_duration_min;
+                ^
+drivers/net/xen-netback/interface.c:470:44: warning: ‘peak_duration_max’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+  int peak_gap_baseline = peak_duration_max * 0.1;
+                                            ^
+drivers/net/xen-netback/interface.c:384:16: note: ‘peak_duration_max’ was declared here
+  unsigned long peak_duration_max;
+                ^
+drivers/net/xen-netback/interface.c:344:6: warning: ‘slope_min’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    if(slope < slope_min)
+      ^
+drivers/net/xen-netback/interface.c:316:8: note: ‘slope_min’ was declared here
+  float slope_min;
+        ^
+drivers/net/xen-netback/interface.c:342:6: warning: ‘slope_max’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+    if(slope > slope_max)
+      ^
+drivers/net/xen-netback/interface.c:315:8: note: ‘slope_max’ was declared here
+  float slope_max;
+        ^
+  LD [M]  drivers/net/xen-netback/xen-netback.o
+  LINK    vmlinux
+  LD      vmlinux.o
+  MODPOST vmlinux.o
+WARNING: modpost: Found 1 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+  GEN     .version
+  CHK     include/generated/compile.h
+  UPD     include/generated/compile.h
+  CC      init/version.o
+  LD      init/built-in.o
+  KSYM    .tmp_kallsyms1.o
+  KSYM    .tmp_kallsyms2.o
+  LD      vmlinux
+  SORTEX  vmlinux
+  SYSMAP  System.map
+  VOFFSET arch/x86/boot/voffset.h
+  OBJCOPY arch/x86/boot/compressed/vmlinux.bin
+  GZIP    arch/x86/boot/compressed/vmlinux.bin.gz
+  MKPIGGY arch/x86/boot/compressed/piggy.S
+  AS      arch/x86/boot/compressed/piggy.o
+  LD      arch/x86/boot/compressed/vmlinux
+  ZOFFSET arch/x86/boot/zoffset.h
+  AS      arch/x86/boot/header.o
+  CC      arch/x86/boot/version.o
+  LD      arch/x86/boot/setup.elf
+  OBJCOPY arch/x86/boot/setup.bin
+  OBJCOPY arch/x86/boot/vmlinux.bin
+  BUILD   arch/x86/boot/bzImage
+Setup is 16912 bytes (padded to 17408 bytes).
+System is 5482 kB
+CRC dca04a18
+Kernel: arch/x86/boot/bzImage is ready  (#3)
+  Building modules, stage 2.
+  MODPOST 3956 modules
+  CC      drivers/net/xen-netback/xen-netback.mod.o
+  LD [M]  drivers/net/xen-netback/xen-netback.ko

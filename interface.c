@@ -387,7 +387,7 @@ static bool is_single_burst(struct xenvif *vif){
 	bool is_first_peak_found = false;
 	
 	struct list_head *qlist;
-	list_for_each(qlist, req_size_list_copy) {
+	list_for_each(qlist, &req_size_list_copy) {
 		struct int_list_node *node = list_entry(qlist, struct int_list_node, list);
 		uint16_t val = node->val;
 
