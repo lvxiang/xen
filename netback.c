@@ -74,7 +74,7 @@ typedef unsigned int pending_ring_idx_t;
 #define INVALID_PENDING_RING_IDX (~0U)
 
 /* mlr-begin : added variable */
-static struct atomic64_t credit_public;
+static atomic64_t credit_public;
 /* mlr-end */
 
 struct pending_tx_info {
@@ -1490,10 +1490,10 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	if ((vif->credit_bytes < vif->credit_initial) && (time_after_eq(now, next_credit)))
 	{
 		printk("mlr: low credit vm store spare credit to public_credit\n");
-		double ratio = (double)T_alloc / T_actu;
-		if (ratio < 0.2)
+		long ratio = T_actu / T_alloc;
+		if (ratio > 5)
 		{
-			long reduce_credit = C_actu - C_actu * ratio;
+			long reduce_credit = C_actu - C_actu / ratio;
 			atomic64_add(reduce_credit, &credit_public);
 			vif->credit_bytes = C_actu - reduce_credit;
 		}
@@ -1503,7 +1503,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	if((vif->credit_bytes < vif->credit_initial) && (time_after_eq(next_credit, now)))
 	{
 		printk("mlr: low credit vm needs stored credit back immediately\n");
-		unsigned long add_credit = min((long) (C_actu * (double)(T_alloc / T_actu)) - C_actu, C_alloc - C_actu);
+		unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc)) - C_actu, C_alloc - C_actu);
 		vif->credit_bytes += add_credit;
 		atomic64_sub(add_credit, &credit_public);
 		
@@ -1522,10 +1522,10 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(now, next_credit)))
 	{
 		printk("mlr: high credit vm store spare credit to public_credit\n");
-		double ratio = (double)T_alloc / T_actu;
-		if (ratio < 0.2)
+		long ratio = T_actu / T_alloc;
+		if (ratio > 5)
 		{
-			long reduce_credit = C_actu - C_actu * ratio;
+			long reduce_credit = C_actu - C_actu / ratio;
 			atomic64_add(reduce_credit, &credit_public);
 			vif->credit_bytes = C_actu - reduce_credit;
 		}
@@ -1534,7 +1534,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(next_credit, now)))
 	{
 		printk("mlr: high credit vm needs more credit\n");
-		unsigned long add_credit = min((long) (C_actu * ((double)T_alloc / T_actu) - C_actu) / 2), credit_public.counter);
+		unsigned long add_credit = min((long) ((C_actu * T_alloc / T_actu - C_actu) / 2), credit_public.counter);
 		if (add_credit > 0)
 		{
 			vif->credit_bytes += add_credit;
@@ -2034,28 +2034,28 @@ err:
 
 /* mlr-begin */
 // calculate the varaiance of request size list
-static double calc_variance(const struct xenvif *vif){
+static long calc_variance(const struct xenvif *vif){
 	printk("mlr: calc variance for %s\n", vif->dev->name);
 	atomic_set(vif->request_size_list_lock, 0);
 	struct list_head *p;
 	int counter = 0;
-	double avg = 0;
-	double variance = 0;
+	long avg = 0;
+	long variance = 0;
 	list_for_each(p, &vif->request_size_list){
-		struct int_list_node *node = list_entry(p, struct int_list_node, list);
+		struct int_list_node *node = list_entry(p, struct int_list_node, list_pointer);
 		avg += node->val;
 		counter ++;
 	}
 	if(counter > 0){
 		avg = avg / counter;
 		list_for_each(p, &vif->request_size_list){
-			struct int_list_node *node = list_entry(p, struct int_list_node, list);
+			struct int_list_node *node = list_entry(p, struct int_list_node, list_pointer);
 			variance += (node->val - avg)*(node->val - avg);
 		}
 		variance = variance / counter;
 	}
 	atomic_set(vif->request_size_list_lock, 1);
-	printk("mlr: calc variance for %s, avg: %lf, var: %lf\n", vif->dev->name, avg, variance);
+	printk("mlr: calc variance for %s, avg: %ld, variance: %ld\n", vif->dev->name, avg, variance);
 	return variance;
 }
 
@@ -2064,16 +2064,17 @@ static void get_vif_priority(struct xen_netbk *netbk){
 	printk("mlr: get vif priority\n");
 	spin_lock_irq(&netbk->vif_list_lock);
 	int vif_num = netbk->netfront_count.counter;
-	double *variances = malloc(sizeof(double) * vif_num);
-	xenvif *viflist   = malloc(sizeof(xenvif) * vif_num);
+	long *variances = kmalloc(sizeof(long) * vif_num);
+	struct xenvif *viflist   = kmalloc(sizeof(struct xenvif) * vif_num);
+	struct xenvif *p;
 	int counter = 0;
 	list_for_each(p, &netbk->vif_list){
 		struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
 		printk("mlr: get variance for %s\n", vif->dev->name);
-		double variance = calc_variance(vif);
-		printk("mlr: variance for %s is %lf\n", vif->dev->name, variance);
+		long variance = calc_variance(vif);
+		printk("mlr: variance for %s is %ld\n", vif->dev->name, variance);
 		variances[counter] = variance;
-		viflist[counter]   = vif;
+		viflist[counter]   = *vif;
 		int i = counter - 1;
 		for(; i >= 0; i--){
 			if(variance < variances[i]){
@@ -2081,24 +2082,28 @@ static void get_vif_priority(struct xen_netbk *netbk){
 				viflist[i] = viflist[i + 1];
 				viflist[i + 1] = viftmp;
 
-				double vartmp    = variances[i];
+				long vartmp    = variances[i];
 				variances[i]     = variances[i + 1];
 				variances[i + 1] = vartmp;
 			}
 		}
 		// TODO clean up the request size list for next timer
-		list_del_init(&vif->request_size_list);
+		struct int_list_node *p;
+		struct int_list_node *n;
+		list_for_each_entry_safe(p, n, &vif->request_size_list, list_pointer){
+			list_del_init(&p->list_pointer);
+		}
 		counter ++;
 	}
 
 	if(counter > 0){
 		int i = 0;
-		while((double)i / counter < DEFAULT_TOP_PRIORITY_RATIO) {
+		while(i < DEFAULT_TOP_PRIORITY_RATIO * counter) {
 			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 3);
 			viflist[i].priority = 3;
 			i ++;
 		}
-		while((double)i / counter < DEFAULT_MID_PRIORITY_RATIO) {
+		while(i < DEFAULT_MID_PRIORITY_RATIO * counter) {
 			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 2);
 			viflist[i].priority = 2;
 			i ++;
