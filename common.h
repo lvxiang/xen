@@ -53,6 +53,11 @@ struct int_list_node{
 	unsigned long time;
 	struct list_head list;
 };
+
+#define DEFAULT_PRIORITY_LIST_NUM 3
+#define DEFAULT_PRIORITY_LIST_UNIT 2
+#define DEFAULT_TOP_PRIORITY_RATIO 0.3f
+#define DEFAULT_MID_PRIORITY_RATIO 0.6f
 /* mlr-end */
 
 struct xenvif {
@@ -108,11 +113,17 @@ struct xenvif {
 	//priority of this vif	
 	unsigned int priority;
 
-	// readjust priority timer
-	struct timer_list priority_timeout;
+	//priority schedule list pointer
+	struct list_head priority_schedule_list;
 
 	// the list records the request size history of this vif in each priority adjust interval
 	struct list_head request_size_list;
+
+	// the mutext lock for request size list, initialized to 1
+	struct atomic_t request_size_list_lock;
+
+	// the pointer of vif_list in netbk
+	struct list_head vif_list_pointer;
 	/* mlr-end */
 
 	/* Statistics */
