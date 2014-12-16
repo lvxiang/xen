@@ -20,63 +20,30 @@ make[1]: Nothing to be done for `relocs'.
   LD      arch/x86/vdso/built-in.o
   LD      arch/x86/built-in.o
   CC [M]  drivers/net/xen-netback/netback.o
-In file included from drivers/net/xen-netback/netback.c:35:0:
-drivers/net/xen-netback/common.h:123:18: error: field ‘request_size_list_lock’ has incomplete type
-  struct atomic_t request_size_list_lock;
-                  ^
+drivers/net/xen-netback/netback.c: In function ‘xen_netbk_schedule_xenvif’:
+drivers/net/xen-netback/netback.c:920:17: error: ‘struct int_list_node’ has no member named ‘list’
+   list_add(&node.list, &vif->request_size_list);
+                 ^
 drivers/net/xen-netback/netback.c: In function ‘tx_credit_exceeded’:
 drivers/net/xen-netback/netback.c:1479:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   unsigned long T_alloc = msecs_to_jiffies(vif->credit_usec / 1000);
   ^
 drivers/net/xen-netback/netback.c:1493:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-   double ratio = (double)T_alloc / T_actu;
+   long ratio = T_actu / T_alloc;
    ^
-drivers/net/xen-netback/netback.c:1497:4: warning: passing argument 2 of ‘atomic64_add’ from incompatible pointer type [enabled by default]
-    atomic64_add(reduce_credit, &credit_public);
-    ^
-In file included from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic.h:274:0,
-                 from include/linux/atomic.h:4,
-                 from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/thread_info.h:23,
-                 from include/linux/thread_info.h:54,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:5,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/netback.c:35:
-/usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic64_64.h:43:20: note: expected ‘struct atomic64_t *’ but argument is of type ‘struct atomic64_t *’
- static inline void atomic64_add(long i, atomic64_t *v)
-                    ^
+drivers/net/xen-netback/netback.c:1506:68: error: macro "min" requires 2 arguments, but only 1 given
+   unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc)) - C_actu, C_alloc - C_actu);
+                                                                    ^
+drivers/net/xen-netback/netback.c:1506:30: error: ‘min’ undeclared (first use in this function)
+   unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc)) - C_actu, C_alloc - C_actu);
+                              ^
+drivers/net/xen-netback/netback.c:1506:30: note: each undeclared identifier is reported only once for each function it appears in
+drivers/net/xen-netback/netback.c:1506:88: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘-’ token
+   unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc)) - C_actu, C_alloc - C_actu);
+                                                                                        ^
 drivers/net/xen-netback/netback.c:1506:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-   unsigned long add_credit = min((long) (C_actu * (double)(T_alloc / T_actu)) - C_actu, C_alloc - C_actu);
+   unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc)) - C_actu, C_alloc - C_actu);
    ^
-drivers/net/xen-netback/netback.c:1508:3: warning: passing argument 2 of ‘atomic64_sub’ from incompatible pointer type [enabled by default]
-   atomic64_sub(add_credit, &credit_public);
-   ^
-In file included from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic.h:274:0,
-                 from include/linux/atomic.h:4,
-                 from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/thread_info.h:23,
-                 from include/linux/thread_info.h:54,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:5,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/netback.c:35:
-/usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic64_64.h:57:20: note: expected ‘struct atomic64_t *’ but argument is of type ‘struct atomic64_t *’
- static inline void atomic64_sub(long i, atomic64_t *v)
-                    ^
-drivers/net/xen-netback/netback.c:1513:2: error: invalid use of undefined type ‘struct atomic64_t’
-  if ((vif->credit_bytes > vif->credit_initial) && (credit_public.counter< 0))
-  ^
-drivers/net/xen-netback/netback.c:1516:3: error: invalid use of undefined type ‘struct atomic64_t’
-   unsigned long reduce_credit = min((C_actu - C_alloc) / 2, 0 - credit_public.counter);
-   ^
-drivers/net/xen-netback/netback.c:1516:3: error: invalid use of undefined type ‘struct atomic64_t’
 In file included from include/linux/cache.h:4:0,
                  from include/linux/time.h:4,
                  from include/linux/stat.h:18,
@@ -92,63 +59,17 @@ drivers/net/xen-netback/netback.c:1516:33: note: in expansion of macro ‘min’
 drivers/net/xen-netback/netback.c:1516:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
    unsigned long reduce_credit = min((C_actu - C_alloc) / 2, 0 - credit_public.counter);
    ^
-drivers/net/xen-netback/netback.c:1518:3: warning: passing argument 2 of ‘atomic64_add’ from incompatible pointer type [enabled by default]
-   atomic64_add(reduce_credit, &credit_public);
-   ^
-In file included from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic.h:274:0,
-                 from include/linux/atomic.h:4,
-                 from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/thread_info.h:23,
-                 from include/linux/thread_info.h:54,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:5,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/netback.c:35:
-/usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic64_64.h:43:20: note: expected ‘struct atomic64_t *’ but argument is of type ‘struct atomic64_t *’
- static inline void atomic64_add(long i, atomic64_t *v)
-                    ^
 drivers/net/xen-netback/netback.c:1525:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-   double ratio = (double)T_alloc / T_actu;
+   long ratio = T_actu / T_alloc;
    ^
-drivers/net/xen-netback/netback.c:1529:4: warning: passing argument 2 of ‘atomic64_add’ from incompatible pointer type [enabled by default]
-    atomic64_add(reduce_credit, &credit_public);
-    ^
-In file included from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic.h:274:0,
-                 from include/linux/atomic.h:4,
-                 from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/thread_info.h:23,
-                 from include/linux/thread_info.h:54,
-                 from include/linux/preempt.h:9,
-                 from include/linux/spinlock.h:50,
-                 from include/linux/seqlock.h:29,
-                 from include/linux/time.h:5,
-                 from include/linux/stat.h:18,
-                 from include/linux/module.h:10,
-                 from drivers/net/xen-netback/common.h:32,
-                 from drivers/net/xen-netback/netback.c:35:
-/usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic64_64.h:43:20: note: expected ‘struct atomic64_t *’ but argument is of type ‘struct atomic64_t *’
- static inline void atomic64_add(long i, atomic64_t *v)
-                    ^
-drivers/net/xen-netback/netback.c:1537:91: error: macro "min" requires 2 arguments, but only 1 given
-   unsigned long add_credit = min((long) (C_actu * ((double)T_alloc / T_actu) - C_actu) / 2), credit_public.counter);
-                                                                                           ^
-drivers/net/xen-netback/netback.c:1537:30: error: ‘min’ undeclared (first use in this function)
-   unsigned long add_credit = min((long) (C_actu * ((double)T_alloc / T_actu) - C_actu) / 2), credit_public.counter);
-                              ^
-drivers/net/xen-netback/netback.c:1537:30: note: each undeclared identifier is reported only once for each function it appears in
-drivers/net/xen-netback/netback.c:1537:107: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘.’ token
-   unsigned long add_credit = min((long) (C_actu * ((double)T_alloc / T_actu) - C_actu) / 2), credit_public.counter);
-                                                                                                           ^
 drivers/net/xen-netback/netback.c:1537:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-   unsigned long add_credit = min((long) (C_actu * ((double)T_alloc / T_actu) - C_actu) / 2), credit_public.counter);
+   unsigned long add_credit = min((long) ((C_actu * T_alloc / T_actu - C_actu) / 2), credit_public.counter);
    ^
-drivers/net/xen-netback/netback.c:1541:4: warning: passing argument 2 of ‘atomic64_sub’ from incompatible pointer type [enabled by default]
-    atomic64_sub(add_credit, &credit_public);
-    ^
-In file included from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic.h:274:0,
-                 from include/linux/atomic.h:4,
+drivers/net/xen-netback/netback.c: In function ‘calc_variance’:
+drivers/net/xen-netback/netback.c:2039:2: error: incompatible type for argument 1 of ‘atomic_set’
+  atomic_set(vif->request_size_list_lock, 0);
+  ^
+In file included from include/linux/atomic.h:4:0,
                  from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/thread_info.h:23,
                  from include/linux/thread_info.h:54,
                  from include/linux/preempt.h:9,
@@ -159,101 +80,125 @@ In file included from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/
                  from include/linux/module.h:10,
                  from drivers/net/xen-netback/common.h:32,
                  from drivers/net/xen-netback/netback.c:35:
-/usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic64_64.h:57:20: note: expected ‘struct atomic64_t *’ but argument is of type ‘struct atomic64_t *’
- static inline void atomic64_sub(long i, atomic64_t *v)
+/usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic.h:35:20: note: expected ‘struct atomic_t *’ but argument is of type ‘atomic_t’
+ static inline void atomic_set(atomic_t *v, int i)
                     ^
-drivers/net/xen-netback/netback.c: In function ‘calc_variance’:
-drivers/net/xen-netback/netback.c:2037:42: error: SSE register return with SSE disabled
- static double calc_variance(const struct xenvif *vif){
-                                          ^
 drivers/net/xen-netback/netback.c:2040:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   struct list_head *p;
   ^
+drivers/net/xen-netback/netback.c:2057:2: error: incompatible type for argument 1 of ‘atomic_set’
+  atomic_set(vif->request_size_list_lock, 1);
+  ^
+In file included from include/linux/atomic.h:4:0,
+                 from /usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/thread_info.h:23,
+                 from include/linux/thread_info.h:54,
+                 from include/linux/preempt.h:9,
+                 from include/linux/spinlock.h:50,
+                 from include/linux/seqlock.h:29,
+                 from include/linux/time.h:5,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/net/xen-netback/common.h:32,
+                 from drivers/net/xen-netback/netback.c:35:
+/usr/src/linux-source-3.11.0/linux-source-3.11.0/arch/x86/include/asm/atomic.h:35:20: note: expected ‘struct atomic_t *’ but argument is of type ‘atomic_t’
+ static inline void atomic_set(atomic_t *v, int i)
+                    ^
 drivers/net/xen-netback/netback.c: In function ‘get_vif_priority’:
 drivers/net/xen-netback/netback.c:2066:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   int vif_num = netbk->netfront_count.counter;
   ^
-drivers/net/xen-netback/netback.c:2067:2: error: implicit declaration of function ‘malloc’ [-Werror=implicit-function-declaration]
-  double *variances = malloc(sizeof(double) * vif_num);
+drivers/net/xen-netback/netback.c:2067:2: error: too few arguments to function ‘kmalloc’
+  long *variances = kmalloc(sizeof(long) * vif_num);
   ^
-drivers/net/xen-netback/netback.c:2067:22: warning: incompatible implicit declaration of built-in function ‘malloc’ [enabled by default]
-  double *variances = malloc(sizeof(double) * vif_num);
-                      ^
-drivers/net/xen-netback/netback.c:2068:2: error: unknown type name ‘xenvif’
-  xenvif *viflist   = malloc(sizeof(xenvif) * vif_num);
-  ^
-drivers/net/xen-netback/netback.c:2068:36: error: ‘xenvif’ undeclared (first use in this function)
-  xenvif *viflist   = malloc(sizeof(xenvif) * vif_num);
-                                    ^
+In file included from include/linux/slab.h:297:0,
+                 from drivers/net/xen-netback/common.h:34,
+                 from drivers/net/xen-netback/netback.c:35:
+include/linux/slub_def.h:158:30: note: declared here
+ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+                              ^
+drivers/net/xen-netback/netback.c:2068:51: error: too few arguments to function ‘kmalloc’
+  struct xenvif *viflist   = kmalloc(sizeof(struct xenvif) * vif_num);
+                                                   ^
+In file included from include/linux/slab.h:297:0,
+                 from drivers/net/xen-netback/common.h:34,
+                 from drivers/net/xen-netback/netback.c:35:
+include/linux/slub_def.h:158:30: note: declared here
+ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+                              ^
 In file included from include/linux/module.h:9:0,
                  from drivers/net/xen-netback/common.h:32,
                  from drivers/net/xen-netback/netback.c:35:
-drivers/net/xen-netback/netback.c:2070:16: error: ‘p’ undeclared (first use in this function)
-  list_for_each(p, &netbk->vif_list){
-                ^
-include/linux/list.h:397:7: note: in definition of macro ‘list_for_each’
+include/linux/list.h:397:11: warning: assignment from incompatible pointer type [enabled by default]
   for (pos = (head)->next; pos != (head); pos = pos->next)
-       ^
-drivers/net/xen-netback/netback.c:2073:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-   double variance = calc_variance(vif);
+           ^
+drivers/net/xen-netback/netback.c:2071:2: note: in expansion of macro ‘list_for_each’
+  list_for_each(p, &netbk->vif_list){
+  ^
+include/linux/list.h:397:31: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+  for (pos = (head)->next; pos != (head); pos = pos->next)
+                               ^
+drivers/net/xen-netback/netback.c:2071:2: note: in expansion of macro ‘list_for_each’
+  list_for_each(p, &netbk->vif_list){
+  ^
+include/linux/list.h:397:51: error: ‘struct xenvif’ has no member named ‘next’
+  for (pos = (head)->next; pos != (head); pos = pos->next)
+                                                   ^
+drivers/net/xen-netback/netback.c:2071:2: note: in expansion of macro ‘list_for_each’
+  list_for_each(p, &netbk->vif_list){
+  ^
+In file included from include/linux/cache.h:4:0,
+                 from include/linux/time.h:4,
+                 from include/linux/stat.h:18,
+                 from include/linux/module.h:10,
+                 from drivers/net/xen-netback/common.h:32,
+                 from drivers/net/xen-netback/netback.c:35:
+include/linux/kernel.h:782:48: warning: initialization from incompatible pointer type [enabled by default]
+  const typeof( ((type *)0)->member ) *__mptr = (ptr); \
+                                                ^
+include/linux/list.h:351:2: note: in expansion of macro ‘container_of’
+  container_of(ptr, type, member)
+  ^
+drivers/net/xen-netback/netback.c:2072:24: note: in expansion of macro ‘list_entry’
+   struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
+                        ^
+include/linux/kernel.h:782:48: warning: (near initialization for ‘vif’) [enabled by default]
+  const typeof( ((type *)0)->member ) *__mptr = (ptr); \
+                                                ^
+include/linux/list.h:351:2: note: in expansion of macro ‘container_of’
+  container_of(ptr, type, member)
+  ^
+drivers/net/xen-netback/netback.c:2072:24: note: in expansion of macro ‘list_entry’
+   struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
+                        ^
+drivers/net/xen-netback/netback.c:2074:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   long variance = calc_variance(vif);
    ^
-drivers/net/xen-netback/netback.c:2076:22: warning: assignment makes integer from pointer without a cast [enabled by default]
-   viflist[counter]   = vif;
-                      ^
-drivers/net/xen-netback/netback.c:2077:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/netback.c:2078:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
    int i = counter - 1;
    ^
-drivers/net/xen-netback/netback.c:2080:29: warning: initialization from incompatible pointer type [enabled by default]
-     struct xenvif *viftmp = &viflist[i];
-                             ^
-drivers/net/xen-netback/netback.c:2082:20: warning: assignment makes integer from pointer without a cast [enabled by default]
+drivers/net/xen-netback/netback.c:2083:20: error: incompatible types when assigning to type ‘struct xenvif’ from type ‘struct xenvif *’
      viflist[i + 1] = viftmp;
                     ^
-drivers/net/xen-netback/netback.c:2084:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
-     double vartmp    = variances[i];
+drivers/net/xen-netback/netback.c:2085:5: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+     long vartmp    = variances[i];
      ^
-drivers/net/xen-netback/netback.c:2097:67: error: request for member ‘dev’ in something not a structure or union
-    printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 3);
-                                                                   ^
-drivers/net/xen-netback/netback.c:2097:89: error: request for member ‘priority’ in something not a structure or union
-    printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 3);
-                                                                                         ^
-drivers/net/xen-netback/netback.c:2098:14: error: request for member ‘priority’ in something not a structure or union
-    viflist[i].priority = 3;
-              ^
-drivers/net/xen-netback/netback.c:2102:67: error: request for member ‘dev’ in something not a structure or union
-    printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 2);
-                                                                   ^
-drivers/net/xen-netback/netback.c:2102:89: error: request for member ‘priority’ in something not a structure or union
-    printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 2);
-                                                                                         ^
-drivers/net/xen-netback/netback.c:2103:14: error: request for member ‘priority’ in something not a structure or union
-    viflist[i].priority = 2;
-              ^
-drivers/net/xen-netback/netback.c:2107:14: error: request for member ‘priority’ in something not a structure or union
-    viflist[i].priority = 1;
-              ^
-drivers/net/xen-netback/netback.c:2108:67: error: request for member ‘dev’ in something not a structure or union
-    printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 1);
-                                                                   ^
-drivers/net/xen-netback/netback.c:2108:89: error: request for member ‘priority’ in something not a structure or union
-    printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 1);
-                                                                                         ^
+drivers/net/xen-netback/netback.c:2091:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+   struct int_list_node *p;
+   ^
 drivers/net/xen-netback/netback.c: In function ‘priority_readjust’:
-drivers/net/xen-netback/netback.c:2120:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/netback.c:2125:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   struct xen_netbk *netbk = (struct xen_netbk *)data;
   ^
-drivers/net/xen-netback/netback.c:2126:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/netback.c:2131:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
   unsigned long next_time = jiffies + msecs_to_jiffies(10000);
   ^
 drivers/net/xen-netback/netback.c: In function ‘netback_init’:
-drivers/net/xen-netback/netback.c:2164:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/netback.c:2169:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
    int k = 0;
    ^
-drivers/net/xen-netback/netback.c:2173:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+drivers/net/xen-netback/netback.c:2178:3: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
    unsigned long next_time = jiffies + msecs_to_jiffies(10000);
    ^
-cc1: some warnings being treated as errors
 make[3]: *** [drivers/net/xen-netback/netback.o] Error 1
 make[2]: *** [drivers/net/xen-netback] Error 2
 make[1]: *** [drivers/net] Error 2
