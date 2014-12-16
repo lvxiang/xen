@@ -47,6 +47,7 @@ static void backend_create_xenvif(struct backend_info *be);
 static void unregister_hotplug_status_watch(struct backend_info *be);
 
 /* mlr-begin : xen_read_bandwidth, domain_number */
+/*
 static void xen_read_bandwidth(struct xenbus_device *dev)
 {
 	char *s, *e;
@@ -71,6 +72,7 @@ fail:
 	pr_warn("Failed to parse network bandwidth.\n");
 	kfree(bandwidthstr);
 }
+*/
 
 /*
 static int domain_number()
@@ -86,16 +88,19 @@ static int domain_number()
 */
 
 static int atoi(char *array){
+	printk("mlr: atoi parse %s\n", array);
 	int result = 0;
 	while(*array != '\0'){
 		result += 10 * result + (*array - '0');
 		array ++;
 	}
+	printk("mlr: result of atoi(%s) is %d\n", array, result);
 	return result;
 }
 
 static int xen_read_priority(struct xenbus_device *dev, int *priority)
 {	
+	printk("mlr: enter xen_read_priority\n");
 	unsigned int b;	
 	char *prioritystr;		
 
@@ -105,8 +110,10 @@ static int xen_read_priority(struct xenbus_device *dev, int *priority)
 		return -ENOENT;	
 
 	b = atoi(prioritystr);
+	printk("mlr: priority of vm %s is %d\n", dev->nodename, b);
 	*priority = b;	
 	kfree(prioritystr);	
+	printk("mlr: exit xen_read_priority\n");
 	return 0;
 }
 /* mlr-end */
@@ -500,6 +507,7 @@ static void connect(struct backend_info *be)
 	/* mlr-begin : changed, add para '&be->vif->credit_initial' */
 	xen_net_read_rate(dev, &be->vif->credit_bytes,
 			  &be->vif->credit_usec, &be->vif->credit_initial);
+	printk("mlr: vif-%s credit initial is %ld\n", be->vif->dev->name, be->vif->credit_initial);
 	/* mlr-end */
 	be->vif->remaining_credit = be->vif->credit_bytes;
 
@@ -637,3 +645,4 @@ void xenvif_xenbus_fini(void)
 {
 	return xenbus_unregister_driver(&netback_driver);
 }
+
