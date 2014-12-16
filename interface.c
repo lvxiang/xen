@@ -274,14 +274,14 @@ static double calc_variance(const struct xenvif *vif){
 	double avg = 0;
 	double variance = 0;
 	list_for_each(p, &vif->request_size_list){
-		struct int_list_node *node = list_entry(p, struct int_list_node, list);
+		struct int_list_node *node = list_entry(p, struct int_list_node, list_pointer);
 		avg += node->val;
 		counter ++;
 	}
 	if(counter > 0){
 		avg = avg / counter;
 		list_for_each(p, &vif->request_size_list){
-			struct int_list_node *node = list_entry(p, struct int_list_node, list);
+			struct int_list_node *node = list_entry(p, struct int_list_node, list_pointer);
 			variance += (node->val - avg)*(node->val - avg);
 		}
 		variance = variance / counter;
@@ -301,12 +301,12 @@ static bool is_steady(struct xenvif *vif){
 		return true;
 	
 	struct list_head *plist;
-	struct int_list_node *node_first = list_first_entry(&vif->request_size_list, struct int_list_node, list);
+	struct int_list_node *node_first = list_first_entry(&vif->request_size_list, struct int_list_node, list_pointer);
 	uint16_t val_first = node_first->val;
 	uint16_t max = val_first;
 	uint16_t min = val_first;
 	list_for_each(plist, &vif->request_size_list) {
-    	struct int_list_node *node = list_entry(plist, struct int_list_node, list);
+    	struct int_list_node *node = list_entry(plist, struct int_list_node, list_pointer);
 		uint16_t val = node->val;
         if(val > max)
 			max = val;
@@ -328,7 +328,7 @@ static bool is_steady(struct xenvif *vif){
 static bool is_steady_rise(struct xenvif *vif){
 	struct list_head *plist;
 	
-	struct int_list_node *node_first = list_first_entry(&vif->request_size_list, struct int_list_node, list);
+	struct int_list_node *node_first = list_first_entry(&vif->request_size_list, struct int_list_node, list_pointer);
 	uint16_t val_first = node_first->val;
 	uint16_t max = val_first;
 	uint16_t min = val_first;
@@ -342,7 +342,7 @@ static bool is_steady_rise(struct xenvif *vif){
 	float slope_min;
 	
 	list_for_each(plist, &vif->request_size_list) {
-    	struct int_list_node *node = list_entry(plist, struct int_list_node, list);
+    	struct int_list_node *node = list_entry(plist, struct int_list_node, list_pointer);
 		uint16_t val = node->val;
         if(val > max)
 			max = val;
@@ -380,14 +380,14 @@ static bool is_steady_rise(struct xenvif *vif){
 static bool is_single_burst(struct xenvif *vif){
 	struct list_head req_size_list_copy;
 	
-	struct int_list_node *node_first = list_first_entry(&vif->request_size_list, struct int_list_node, list);
+	struct int_list_node *node_first = list_first_entry(&vif->request_size_list, struct int_list_node, list_pointer);
 	uint16_t val_first = node_first->val;
 	uint16_t max = val_first;
 	uint16_t min = val_first;
 
 	struct list_head *plist;
 	list_for_each(plist, &vif->request_size_list) {
-    	struct int_list_node *node = list_entry(plist, struct int_list_node, list);
+    	struct int_list_node *node = list_entry(plist, struct int_list_node, list_pointer);
 		list_add_tail(&node->list, &req_size_list_copy);
 		
 		uint16_t val = node->val;
