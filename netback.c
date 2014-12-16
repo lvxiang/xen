@@ -74,7 +74,7 @@ typedef unsigned int pending_ring_idx_t;
 #define INVALID_PENDING_RING_IDX (~0U)
 
 /* mlr-begin : added variable */
-static unsigned long credit_public;
+static struct atomic64_t credit_public;
 /* mlr-end */
 
 struct pending_tx_info {
@@ -153,16 +153,26 @@ struct xen_netbk {
 	
 	/* mlr-begin : added variable */
 	// list_head of each priority schedule list
-	struct list_head priority_schedule_list[5];
+	struct list_head priority_schedule_list[DEFAULT_PRIORITY_LIST_NUM];
 	
-	// priority of the current running schedule_list, [1, 2, 3, 4, 5], 5 has the highest priority	
-	int current_priority;		
+	// priority of the current running schedule_list, [1, 2, 3, 4], 4 has the highest priority	
+	int current_priority;
+
+	// the lock protect current_priority
+	spinlock_t current_priority_lock;
 
 	// the unit number of request taken out from each priority schedule_list, the actual number of request taken out is queue_num_unit*priority	
 	int queue_num_unit;
 
 	// the number of request already taken out from current priority queue
 	int queue_req_count;
+
+	// readjust priority timer
+	struct timer_list priority_timeout;
+
+	struct list_head vif_list;
+
+	spinlock_t vif_list_lock;
 	/* mlr-end */
 };
 
@@ -201,7 +211,9 @@ void xen_netbk_add_xenvif(struct xenvif *vif)
 	atomic_inc(&netbk->netfront_count);
 
 	/* mlr-begin : init request size list */
-	INIT_LIST_HEAD(&vif->request_size_list);
+	spin_lock_irq(&netbk->vif_list_lock);
+	list_add_tail(&vif->vif_list_pointer, &netbk->vif_list);
+	spin_unlock_irq(&netbk->vif_list_lock);
 	/* mlr-end */
 }
 
@@ -209,6 +221,11 @@ void xen_netbk_remove_xenvif(struct xenvif *vif)
 {
 	struct xen_netbk *netbk = vif->netbk;
 	vif->netbk = NULL;
+	/* mlr-begin */
+	spin_lock_irq(&netbk->vif_list_lock);
+	list_del(&vif->vif_list_pointer);
+	spin_unlock_irq(&netbk->vif_list_lock);
+	/* mlr-end */
 	atomic_dec(&netbk->netfront_count);
 }
 
@@ -848,6 +865,9 @@ static void remove_from_net_schedule_list(struct xenvif *vif)
 {
 	if (likely(__on_net_schedule_list(vif))) {
 		list_del_init(&vif->schedule_list);
+		/* mlr-begin */
+		list_del_init(&vif->priority_schedule_list);
+		/* mlr-end */
 		xenvif_put(vif);
 	}
 }
@@ -861,20 +881,22 @@ static struct xenvif *poll_net_schedule_list(struct xen_netbk *netbk)
 		goto out;
 	
 	/* mlr-begin : poll vif from the current priority schedule list */
-	if (netbk->queue_req_count >= (netbk->current_priority) * (netbk->queue_num_unit)){
-		netbk->current_priority = (netbk->current_priority + 1) % 5;
+	printk("mlr: poll_net_schedule_list\n");
+	if (netbk->queue_req_count >= (netbk->current_priority + 1) * (netbk->queue_num_unit)){
+		netbk->current_priority = (netbk->current_priority - 1 + DEFAULT_PRIORITY_LIST_NUM) % DEFAULT_PRIORITY_LIST_NUM;
 		netbk->queue_req_count = 0;
+		printk("mlr: change netbk priority to %d\n", netbk->current_priority);
 	}
-	vif = list_first_entry(&netbk->priority_schedule_list[netbk->current_priority - 1], struct xenvif, schedule_list);
+	vif = list_first_entry(&netbk->priority_schedule_list[netbk->current_priority], struct xenvif, schedule_list);
 	netbk->queue_req_count++;
 	/* mlr-end */
 	/* original: 
 	vif = list_first_entry(&netbk->net_schedule_list,
 			       struct xenvif, schedule_list);
 	*/
-	if (!vif)
+	if (!vif){
 		goto out;
-
+	}
 	xenvif_get(vif);
 
 	remove_from_net_schedule_list(vif);
@@ -889,11 +911,15 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	struct xen_netbk *netbk = vif->netbk;
 
 	/* mlr-begin : record the size of the request */
-	uint16_t req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
-	struct int_list_node node;
-	node.val = req_size;
-	node.time = jiffies;
-	list_add(&node.list, &vif->request_size_list);
+	printk("mlr: xen_netbk_schedule_xenvif");
+	if(vif->request_size_list_lock.counter > 0){
+		uint16_t req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
+		struct int_list_node node;
+		node.val = req_size;
+		node.time = jiffies;
+		list_add(&node.list, &vif->request_size_list);
+		printk("mlr: new request size %d\n", req_size);
+	}
 	/* mlr-end */
 
 	if (__on_net_schedule_list(vif))
@@ -904,7 +930,7 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	    likely(xenvif_schedulable(vif))) {
 		list_add_tail(&vif->schedule_list, &netbk->net_schedule_list);
 		/* mlr-begin : add the vif to its priority schedule list */
-		list_add_tail(&vif->schedule_list, &netbk->priority_schedule_list[vif->priority - 1]);
+		list_add_tail(&vif->priority_schedule_list, &netbk->priority_schedule_list[vif->priority - 1]);
 		/* mlr-end */
 		xenvif_get(vif);
 	}
@@ -1449,56 +1475,70 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 		return true;
 
 	/* mlr-begin : adjust vif->credit_bytes according to usage condition */
+	printk("mlr: credits exceeded for %s\n", vif->dev->name);
 	unsigned long T_alloc = msecs_to_jiffies(vif->credit_usec / 1000);
 	unsigned long T_actu = now - vif->credit_timeout.expires;
 	unsigned long C_alloc = vif->credit_initial;
 	unsigned long C_actu = vif->credit_bytes;
+	printk("mlr: t_alloc is %ld\n", T_alloc);
+	printk("mlr: t_actu is %ld\n", T_actu);
+	printk("mlr: c_alloc is %ld\n", C_alloc);
+	printk("mlr: c_actu is %ld\n", C_actu);
+	
 
 	//low credit vm store spare credit to public_credit
 	if ((vif->credit_bytes < vif->credit_initial) && (time_after_eq(now, next_credit)))
 	{
-		double ratio = T_alloc / T_actu;
+		printk("mlr: low credit vm store spare credit to public_credit\n");
+		double ratio = (double)T_alloc / T_actu;
 		if (ratio < 0.2)
 		{
-			credit_public += C_actu - (C_actu * T_alloc) / T_actu;
-			vif->credit_bytes = (C_actu * T_alloc) / T_actu;
+			long reduce_credit = C_actu - C_actu * ratio;
+			atomic64_add(reduce_credit, &credit_public);
+			vif->credit_bytes = C_actu - reduce_credit;
 		}
 	}
 
 	//low credit vm needs stored credit back immediately
 	if((vif->credit_bytes < vif->credit_initial) && (time_after_eq(next_credit, now)))
 	{
-		unsigned long add_credit = min((long) ((C_actu * T_alloc) / T_actu) - C_actu, C_alloc - C_actu);
+		printk("mlr: low credit vm needs stored credit back immediately\n");
+		unsigned long add_credit = min((long) (C_actu * (double)(T_alloc / T_actu)) - C_actu, C_alloc - C_actu);
 		vif->credit_bytes += add_credit;
-		credit_public -= add_credit;
+		atomic64_sub(add_credit, &credit_public);
+		
 	}
 
 	//high credit vm return overdraw credit to public_credit
-	if ((vif->credit_bytes > vif->credit_initial) && (credit_public < 0))
+	if ((vif->credit_bytes > vif->credit_initial) && (credit_public.counter< 0))
 	{
-		unsigned long reduce_credit = min((long) ((C_actu - C_alloc) / 2), 0 - credit_public);
+		printk("mlr: high credit vm return overdraw credit to public_credit\n");
+		unsigned long reduce_credit = min((C_actu - C_alloc) / 2, 0 - credit_public.counter);
 		vif->credit_bytes -= reduce_credit;
-		credit_public += reduce_credit;
+		atomic64_add(reduce_credit, &credit_public);
 	}
 
 	//high credit vm store spare credit to public_credit
 	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(now, next_credit)))
 	{
-		double ratio = T_alloc / T_actu;
+		printk("mlr: high credit vm store spare credit to public_credit\n");
+		double ratio = (double)T_alloc / T_actu;
 		if (ratio < 0.2)
 		{
-			credit_public += C_actu - (C_actu * T_alloc) / T_actu;
-			vif->credit_bytes = (C_actu * T_alloc) / T_actu;
+			long reduce_credit = C_actu - C_actu * ratio;
+			atomic64_add(reduce_credit, &credit_public);
+			vif->credit_bytes = C_actu - reduce_credit;
 		}
 	}
 	//high credit vm needs more credit
 	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(next_credit, now)))
 	{
-		unsigned long add_credit = min((long) (((C_actu * T_alloc) / T_actu - C_actu) / 2), credit_public);
+		printk("mlr: high credit vm needs more credit\n");
+		unsigned long add_credit = min((long) (C_actu * ((double)T_alloc / T_actu) - C_actu) / 2), credit_public.counter);
 		if (add_credit > 0)
 		{
 			vif->credit_bytes += add_credit;
-			credit_public -= add_credit;
+			atomic64_sub(add_credit, &credit_public);
 		}
 	}
 	/* mlr-end */
@@ -1554,8 +1594,12 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
 
 		/* mlr-begin : switch to next priority schedule list if current priority list has no vif left */
 		if (!vif){
-			netbk->current_priority = (netbk->current_priority + 1) % 5;
+			printk("mlr: current priority queue empty, switch to next\n");
+			spin_lock_irq(&netbk->current_priority_lock);
+			netbk->current_priority = (netbk->current_priority - 1 + DEFAULT_PRIORITY_LIST_NUM) % DEFAULT_PRIORITY_LIST_NUM;
 			netbk->queue_req_count = 0;
+			spin_unlock_irq(&netbk->current_priority_lock);
+			printk("mlr: switched to %d\n", netbk->current_priority);
 			continue;
 		}
 		/* mlr-end */
@@ -1988,6 +2032,105 @@ err:
 	return err;
 }
 
+/* mlr-begin */
+// calculate the varaiance of request size list
+static double calc_variance(const struct xenvif *vif){
+	printk("mlr: calc variance for %s\n", vif->dev->name);
+	atomic_set(vif->request_size_list_lock, 0);
+	struct list_head *p;
+	int counter = 0;
+	double avg = 0;
+	double variance = 0;
+	list_for_each(p, &vif->request_size_list){
+		struct int_list_node *node = list_entry(p, struct int_list_node, list);
+		avg += node->val;
+		counter ++;
+	}
+	if(counter > 0){
+		avg = avg / counter;
+		list_for_each(p, &vif->request_size_list){
+			struct int_list_node *node = list_entry(p, struct int_list_node, list);
+			variance += (node->val - avg)*(node->val - avg);
+		}
+		variance = variance / counter;
+	}
+	atomic_set(vif->request_size_list_lock, 1);
+	printk("mlr: calc variance for %s, avg: %lf, var: %lf\n", vif->dev->name, avg, variance);
+	return variance;
+}
+
+// get the priority of the vif
+static void get_vif_priority(struct xen_netbk *netbk){
+	printk("mlr: get vif priority\n");
+	spin_lock_irq(&netbk->vif_list_lock);
+	int vif_num = netbk->netfront_count.counter;
+	double *variances = malloc(sizeof(double) * vif_num);
+	xenvif *viflist   = malloc(sizeof(xenvif) * vif_num);
+	int counter = 0;
+	list_for_each(p, &netbk->vif_list){
+		struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
+		printk("mlr: get variance for %s\n", vif->dev->name);
+		double variance = calc_variance(vif);
+		printk("mlr: variance for %s is %lf\n", vif->dev->name, variance);
+		variances[counter] = variance;
+		viflist[counter]   = vif;
+		int i = counter - 1;
+		for(; i >= 0; i--){
+			if(variance < variances[i]){
+				struct xenvif *viftmp = &viflist[i];
+				viflist[i] = viflist[i + 1];
+				viflist[i + 1] = viftmp;
+
+				double vartmp    = variances[i];
+				variances[i]     = variances[i + 1];
+				variances[i + 1] = vartmp;
+			}
+		}
+		// TODO clean up the request size list for next timer
+		list_del_init(&vif->request_size_list);
+		counter ++;
+	}
+
+	if(counter > 0){
+		int i = 0;
+		while((double)i / counter < DEFAULT_TOP_PRIORITY_RATIO) {
+			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 3);
+			viflist[i].priority = 3;
+			i ++;
+		}
+		while((double)i / counter < DEFAULT_MID_PRIORITY_RATIO) {
+			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 2);
+			viflist[i].priority = 2;
+			i ++;
+		}
+		while(i < counter) {
+			viflist[i].priority = 1;
+			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 1);
+			i ++;
+		}
+	}
+	spin_unlock_irq(&netbk->vif_list_lock);
+	printk("mlr: end of get vif priority\n");
+}
+
+// priority timer callback, readjust the priority of the vif
+static void priority_readjust(unsigned long data)
+{
+	printk("mlr: readjust priority\n");
+	struct xen_netbk *netbk = (struct xen_netbk *)data;
+	//Timer could already be pending in rare cases.
+	if (timer_pending(&netbk->priority_timeout))
+		return;
+	get_vif_priority(netbk);
+	// the time interval of reajusting vif's priority is set to 100 times the interval of reallocating credits
+	unsigned long next_time = jiffies + msecs_to_jiffies(10000);
+	mod_timer(&netbk->priority_timeout, next_time);
+	printk("mlr: readjust priority\n");
+}
+
+/* mlr-end */
+
+
 static int __init netback_init(void)
 {
 	int i;
@@ -2012,8 +2155,24 @@ static int __init netback_init(void)
 		struct xen_netbk *netbk = &xen_netbk[group];
 
 		/* mlr-begin : initialize */		
-		netbk->current_priority = 5;		
-		netbk->queue_num_unit = 2;		
+		printk("mlr: xenback init\n");
+		netbk->current_priority = DEFAULT_PRIORITY_LIST_NUM - 1;		
+		netbk->queue_num_unit = DEFAULT_PRIORITY_LIST_UNIT;
+
+		INIT_LIST_HEAD(&netbk->vif_list);
+		printk("mlr: xenback init, init priority schedule lists\n"); 
+		int k = 0;
+		for(; k < DEFAULT_PRIORITY_LIST_NUM; k ++){
+			INIT_LIST_HEAD(&netbk->priority_schedule_list[k]);
+		}
+
+		init_timer(&netbk->priority_timeout);
+		netbk->priority_timeout.expires = jiffies;
+		netbk->priority_timeout.data = (unsigned long)netbk;
+		netbk->priority_timeout.function = priority_readjust;
+		unsigned long next_time = jiffies + msecs_to_jiffies(10000);
+		mod_timer(&netbk->priority_timeout, next_time);
+		printk("mlr: end of xenback init\n");
 		/* mlr-end */
 		
 		skb_queue_head_init(&netbk->rx_queue);
@@ -2045,6 +2204,12 @@ static int __init netback_init(void)
 		INIT_LIST_HEAD(&netbk->net_schedule_list);
 
 		spin_lock_init(&netbk->net_schedule_list_lock);
+
+		/* mlr-begin : initialize lock */
+		spin_lock_init(&netbk->current_priority_lock);
+		
+		spin_lock_init(&netbk->vif_list_lock);
+		/* mlr-end */
 
 		atomic_set(&netbk->netfront_count, 0);
 
