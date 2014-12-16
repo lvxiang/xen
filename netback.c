@@ -917,7 +917,7 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 		struct int_list_node node;
 		node.val = req_size;
 		node.time = jiffies;
-		list_add(&node.list, &vif->request_size_list);
+		list_add(&node.list_pointer, &vif->request_size_list);
 		printk("mlr: new request size %d\n", req_size);
 	}
 	/* mlr-end */
@@ -1503,7 +1503,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	if((vif->credit_bytes < vif->credit_initial) && (time_after_eq(next_credit, now)))
 	{
 		printk("mlr: low credit vm needs stored credit back immediately\n");
-		unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc)) - C_actu, C_alloc - C_actu);
+		unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc) - C_actu, C_alloc - C_actu);
 		vif->credit_bytes += add_credit;
 		atomic64_sub(add_credit, &credit_public);
 		
@@ -2036,7 +2036,7 @@ err:
 // calculate the varaiance of request size list
 static long calc_variance(const struct xenvif *vif){
 	printk("mlr: calc variance for %s\n", vif->dev->name);
-	atomic_set(vif->request_size_list_lock, 0);
+	atomic_set(&vif->request_size_list_lock, 0);
 	struct list_head *p;
 	int counter = 0;
 	long avg = 0;
@@ -2054,7 +2054,7 @@ static long calc_variance(const struct xenvif *vif){
 		}
 		variance = variance / counter;
 	}
-	atomic_set(vif->request_size_list_lock, 1);
+	atomic_set(&vif->request_size_list_lock, 1);
 	printk("mlr: calc variance for %s, avg: %ld, variance: %ld\n", vif->dev->name, avg, variance);
 	return variance;
 }
@@ -2064,9 +2064,9 @@ static void get_vif_priority(struct xen_netbk *netbk){
 	printk("mlr: get vif priority\n");
 	spin_lock_irq(&netbk->vif_list_lock);
 	int vif_num = netbk->netfront_count.counter;
-	long *variances = kmalloc(sizeof(long) * vif_num);
-	struct xenvif *viflist   = kmalloc(sizeof(struct xenvif) * vif_num);
-	struct xenvif *p;
+	long *variances = kmalloc(sizeof(long) * vif_num, GFP_KERNEL);
+	struct xenvif *viflist   = kmalloc(sizeof(struct xenvif) * vif_num, GFP_KERNEL);
+	struct list_head *p;
 	int counter = 0;
 	list_for_each(p, &netbk->vif_list){
 		struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
@@ -2078,7 +2078,7 @@ static void get_vif_priority(struct xen_netbk *netbk){
 		int i = counter - 1;
 		for(; i >= 0; i--){
 			if(variance < variances[i]){
-				struct xenvif *viftmp = &viflist[i];
+				struct xenvif viftmp = viflist[i];
 				viflist[i] = viflist[i + 1];
 				viflist[i + 1] = viftmp;
 
