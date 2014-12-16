@@ -51,7 +51,7 @@ struct xen_netbk;
 struct int_list_node{
 	uint16_t val;
 	unsigned long time;
-	struct list_head list;
+	struct list_head list_pointer;
 };
 
 #define DEFAULT_PRIORITY_LIST_NUM 3
@@ -120,7 +120,7 @@ struct xenvif {
 	struct list_head request_size_list;
 
 	// the mutext lock for request size list, initialized to 1
-	struct atomic_t request_size_list_lock;
+	atomic_t request_size_list_lock;
 
 	// the pointer of vif_list in netbk
 	struct list_head vif_list_pointer;
