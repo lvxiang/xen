@@ -2040,19 +2040,39 @@ static long calc_variance(const struct xenvif *vif){
 	int counter = 0;
 	long avg = 0;
 	long variance = 0;
+	MLR_DEBUG
 	list_for_each(p, &vif->request_size_list){
+		MLR_DEBUG
 		struct long_list_node *node = list_entry(p, struct long_list_node, list_pointer);
-		avg += node->val;
-		counter ++;
+		if(node != NULL){
+			MLR_DEBUG
+			avg += node->val;
+			counter ++;
+		}
 	}
+	MLR_DEBUG
 	if(counter > 0){
+		MLR_DEBUG
 		avg = avg / counter;
+		MLR_DEBUG
 		list_for_each(p, &vif->request_size_list){
+			MLR_DEBUG
 			struct long_list_node *node = list_entry(p, struct long_list_node, list_pointer);
+			MLR_DEBUG
 			variance += (node->val - avg)*(node->val - avg);
 		}
+		MLR_DEBUG
 		variance = variance / counter;
 	}
+	// TODO clean up the request size list for next timer
+	struct long_list_node *p;
+	struct long_list_node *n;
+	MLR_DEBUG
+	list_for_each_entry_safe(p, n, &vif->request_size_list, list_pointer){
+		MLR_DEBUG
+		list_del_init(&p->list_pointer);
+	}
+	MLR_DEBUG
 	atomic_set(&vif->request_size_list_lock, 1);
 	printk("mlr: calc variance for %s, avg: %ld, variance: %ld\n", vif->dev->name, avg, variance);
 	return variance;
@@ -2085,12 +2105,6 @@ static void get_vif_priority(struct xen_netbk *netbk){
 				variances[i]     = variances[i + 1];
 				variances[i + 1] = vartmp;
 			}
-		}
-		// TODO clean up the request size list for next timer
-		struct long_list_node *p;
-		struct long_list_node *n;
-		list_for_each_entry_safe(p, n, &vif->request_size_list, list_pointer){
-			list_del_init(&p->list_pointer);
 		}
 		counter ++;
 	}
