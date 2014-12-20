@@ -87,6 +87,7 @@ static int domain_number()
 }
 */
 
+/*
 static int atoi(char *array){
 	printk("mlr: atoi parse %s\n", array);
 	int result = 0;
@@ -116,6 +117,7 @@ static int xen_read_priority(struct xenbus_device *dev, int *priority)
 	printk("mlr: exit xen_read_priority\n");
 	return 0;
 }
+*/
 /* mlr-end */
 
 
@@ -496,12 +498,14 @@ static void connect(struct backend_info *be)
 		return;
 	}
 
-	/* mlr-begin :  read the priority the vif*/		
+	/* mlr-begin :  read the priority the vif*/
+	/*
 	err = xen_read_priority(dev, &(be->vif->priority));	
 	if (err) {		
 		xenbus_dev_fatal(dev, err, "parsing %s/priority", dev->nodename);		
 		return;	
 	}	
+	*/
 	/* mlr-end */
 
 	/* mlr-begin : changed, add para '&be->vif->credit_initial' */
