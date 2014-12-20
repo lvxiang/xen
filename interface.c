@@ -563,6 +563,7 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
 	INIT_LIST_HEAD(&vif->request_size_list);
 	INIT_LIST_HEAD(&vif->vif_list_pointer);
 	atomic_set(&vif->request_size_list_lock, 1);
+	vif->priority = 1;
 	printk("mlr: end of xenvif initialization");
 	/* mlr-end */
 	INIT_LIST_HEAD(&vif->notify_list);
