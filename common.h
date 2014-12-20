@@ -48,9 +48,8 @@
 struct xen_netbk;
 
 /* mlr-begin : a list of type int */
-struct int_list_node{
-	uint16_t val;
-	unsigned long time;
+struct long_list_node{
+	long val;
 	struct list_head list_pointer;
 };
 
