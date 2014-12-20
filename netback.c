@@ -2081,6 +2081,7 @@ static long calc_variance(const struct xenvif *vif){
 // get the priority of the vif
 static void get_vif_priority(struct xen_netbk *netbk){
 	printk("mlr: get vif priority\n");
+	preempt_disable();
 	spin_lock_irq(&netbk->vif_list_lock);
 	int vif_num = netbk->netfront_count.counter;
 	long *variances = kmalloc(sizeof(long) * vif_num, GFP_KERNEL);
@@ -2128,6 +2129,7 @@ static void get_vif_priority(struct xen_netbk *netbk){
 		}
 	}
 	spin_unlock_irq(&netbk->vif_list_lock);
+	preempt_enable();
 	printk("mlr: end of get vif priority\n");
 }
 
