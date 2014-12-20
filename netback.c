@@ -917,7 +917,7 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 		struct long_list_node node;
 		node.val = req_size;
 		list_add(&node.list_pointer, &vif->request_size_list);
-		printk("mlr: new request size %d\n", req_size);
+		printk("mlr: new request size %ld\n", req_size);
 	}
 	/* mlr-end */
 
@@ -2065,12 +2065,12 @@ static long calc_variance(const struct xenvif *vif){
 		variance = variance / counter;
 	}
 	// TODO clean up the request size list for next timer
-	struct long_list_node *p;
-	struct long_list_node *n;
+	struct long_list_node *cp;
+	struct long_list_node *np;
 	MLR_DEBUG
-	list_for_each_entry_safe(p, n, &vif->request_size_list, list_pointer){
+	list_for_each_entry_safe(cp, np, &vif->request_size_list, list_pointer){
 		MLR_DEBUG
-		list_del_init(&p->list_pointer);
+		list_del_init(&cp->list_pointer);
 	}
 	MLR_DEBUG
 	atomic_set(&vif->request_size_list_lock, 1);
