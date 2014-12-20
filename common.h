@@ -57,6 +57,7 @@ struct long_list_node{
 #define DEFAULT_PRIORITY_LIST_UNIT 2
 #define DEFAULT_TOP_PRIORITY_RATIO 0.3f
 #define DEFAULT_MID_PRIORITY_RATIO 0.6f
+#define MLR_DEBUG printk("mlr: %d\n", __LINE__);
 /* mlr-end */
 
 struct xenvif {
