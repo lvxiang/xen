@@ -913,10 +913,9 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	/* mlr-begin : record the size of the request */
 	printk("mlr: xen_netbk_schedule_xenvif");
 	if(vif->request_size_list_lock.counter > 0){
-		uint16_t req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
-		struct int_list_node node;
+		long req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
+		struct long_list_node node;
 		node.val = req_size;
-		node.time = jiffies;
 		list_add(&node.list_pointer, &vif->request_size_list);
 		printk("mlr: new request size %d\n", req_size);
 	}
@@ -2042,14 +2041,14 @@ static long calc_variance(const struct xenvif *vif){
 	long avg = 0;
 	long variance = 0;
 	list_for_each(p, &vif->request_size_list){
-		struct int_list_node *node = list_entry(p, struct int_list_node, list_pointer);
+		struct long_list_node *node = list_entry(p, struct long_list_node, list_pointer);
 		avg += node->val;
 		counter ++;
 	}
 	if(counter > 0){
 		avg = avg / counter;
 		list_for_each(p, &vif->request_size_list){
-			struct int_list_node *node = list_entry(p, struct int_list_node, list_pointer);
+			struct long_list_node *node = list_entry(p, struct long_list_node, list_pointer);
 			variance += (node->val - avg)*(node->val - avg);
 		}
 		variance = variance / counter;
@@ -2088,8 +2087,8 @@ static void get_vif_priority(struct xen_netbk *netbk){
 			}
 		}
 		// TODO clean up the request size list for next timer
-		struct int_list_node *p;
-		struct int_list_node *n;
+		struct long_list_node *p;
+		struct long_list_node *n;
 		list_for_each_entry_safe(p, n, &vif->request_size_list, list_pointer){
 			list_del_init(&p->list_pointer);
 		}
