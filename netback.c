@@ -885,6 +885,9 @@ static struct xenvif *poll_net_schedule_list(struct xen_netbk *netbk)
 		goto out;
 	
 	/* mlr-begin : poll vif from the current priority schedule list */
+	if (list_empty(&netbk->priority_schedule_list[netbk->current_priority]))
+		goto out;
+	
 	printk("mlr: poll_net_schedule_list\n");
 	if (netbk->queue_req_count >= (netbk->current_priority + 1) * (netbk->queue_num_unit)){
 		netbk->current_priority = (netbk->current_priority - 1 + DEFAULT_PRIORITY_LIST_NUM) % DEFAULT_PRIORITY_LIST_NUM;
