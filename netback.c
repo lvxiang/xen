@@ -2191,7 +2191,7 @@ static int __init netback_init(void)
 		netbk->priority_timeout.data = (unsigned long)netbk;
 		netbk->priority_timeout.function = priority_readjust;
 		unsigned long next_time = jiffies + msecs_to_jiffies(10000);
-		mod_timer(&netbk->priority_timeout, next_time);
+		// mod_timer(&netbk->priority_timeout, next_time);
 		printk("mlr: end of xenback init\n");
 		/* mlr-end */
 		
