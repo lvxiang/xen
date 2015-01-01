@@ -887,7 +887,7 @@ static struct xenvif *poll_net_schedule_list(struct xen_netbk *netbk)
 		netbk->queue_req_count = 0;
 		printk("mlr: change netbk priority to %d\n", netbk->current_priority);
 	}
-	vif = list_first_entry(&netbk->priority_schedule_list[netbk->current_priority], struct xenvif, schedule_list);
+	vif = list_first_entry(&netbk->priority_schedule_list[netbk->current_priority], struct xenvif, priority_schedule_list);
 	netbk->queue_req_count++;
 	/* mlr-end */
 	/* original: 
