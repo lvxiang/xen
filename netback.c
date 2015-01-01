@@ -863,10 +863,14 @@ static int __on_net_schedule_list(struct xenvif *vif)
 /* Must be called with net_schedule_list_lock held */
 static void remove_from_net_schedule_list(struct xenvif *vif)
 {
+	printk("mlr: before branch\n");
 	if (likely(__on_net_schedule_list(vif))) {
+		printk("mlr: branch--1\n");
 		list_del_init(&vif->schedule_list);
+		printk("mlr: branch--2\n");
 		/* mlr-begin */
 		list_del_init(&vif->priority_schedule_list);
+		printk("mlr: branch--3\n");
 		/* mlr-end */
 		xenvif_put(vif);
 	}
