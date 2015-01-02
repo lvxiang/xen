@@ -120,7 +120,7 @@ struct xenvif {
 	struct list_head request_size_list;
 
 	// the mutext lock for request size list, initialized to 1
-	atomic_t request_size_list_lock;
+	int request_size_list_lock;
 
 	// the pointer of vif_list in netbk
 	struct list_head vif_list_pointer;
