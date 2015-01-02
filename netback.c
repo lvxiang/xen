@@ -915,13 +915,14 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 
 	/* mlr-begin : record the size of the request */
 	printk("mlr: xen_netbk_schedule_xenvif");
-	if(vif->request_size_list_lock.counter > 0){
-		long req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
-		struct long_list_node node;
-		node.val = req_size;
-		list_add(&node.list_pointer, &vif->request_size_list);
-		printk("mlr: new request size %ld\n", req_size);
-	}
+	while(vif->request_size_list_lock == 0);
+	
+	long req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
+	struct long_list_node node;
+	node.val = req_size;
+	list_add(&node.list_pointer, &vif->request_size_list);
+	printk("mlr: new request size %ld\n", req_size);
+
 	/* mlr-end */
 
 	if (__on_net_schedule_list(vif))
@@ -2038,7 +2039,8 @@ err:
 // calculate the varaiance of request size list
 static long calc_variance(const struct xenvif *vif){
 	printk("mlr: calc variance for %s\n", vif->dev->name);
-	atomic_set(&vif->request_size_list_lock, 0);
+	vif->request_size_list_lock = 0;
+	smp_mb();
 	struct list_head *p;
 	int counter = 0;
 	long avg = 0;
@@ -2081,7 +2083,8 @@ static long calc_variance(const struct xenvif *vif){
 
 out:
 	MLR_DEBUG
-	atomic_set(&vif->request_size_list_lock, 1);
+	vif->request_size_list_lock = 1;
+	smp_mb();
 	printk("mlr: calc variance for %s, avg: %ld, variance: %ld\n", vif->dev->name, avg, variance);
 	return variance;
 }
@@ -2089,7 +2092,7 @@ out:
 // get the priority of the vif
 static void get_vif_priority(struct xen_netbk *netbk){
 	printk("mlr: get vif priority\n");
-	spin_lock_irq(&netbk->vif_list_lock);
+	// spin_lock_irq(&netbk->vif_list_lock);
 	if(list_empty(&netbk->vif_list))
 		goto out;
 		
@@ -2100,6 +2103,8 @@ static void get_vif_priority(struct xen_netbk *netbk){
 	int counter = 0;
 	list_for_each(p, &netbk->vif_list){
 		struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
+		if(!vif) break;
+		
 		printk("mlr: get variance for %s\n", vif->dev->name);
 		long variance = calc_variance(vif);
 		printk("mlr: variance for %s is %ld\n", vif->dev->name, variance);
@@ -2140,7 +2145,7 @@ static void get_vif_priority(struct xen_netbk *netbk){
 	}
 
 out:	
-	spin_unlock_irq(&netbk->vif_list_lock);
+	// spin_unlock_irq(&netbk->vif_list_lock);
 	printk("mlr: end of get vif priority\n");
 }
 
