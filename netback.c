@@ -2037,7 +2037,7 @@ err:
 
 /* mlr-begin */
 // calculate the varaiance of request size list
-static long calc_variance(const struct xenvif *vif){
+static long calc_variance(struct xenvif *vif){
 	printk("mlr: calc variance for %s\n", vif->dev->name);
 	vif->request_size_list_lock = 0;
 	smp_mb();
@@ -2079,7 +2079,7 @@ static long calc_variance(const struct xenvif *vif){
 	list_for_each_entry_safe(cp, np, &vif->request_size_list, list_pointer){
 		MLR_DEBUG
 		list_del(&cp->list_pointer);
-		free(cp);
+		kfree(cp);
 	}
 
 out:
