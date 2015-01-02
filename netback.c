@@ -2078,7 +2078,8 @@ static long calc_variance(const struct xenvif *vif){
 	MLR_DEBUG
 	list_for_each_entry_safe(cp, np, &vif->request_size_list, list_pointer){
 		MLR_DEBUG
-		list_del_init(&cp->list_pointer);
+		list_del(&cp->list_pointer);
+		free(cp);
 	}
 
 out:
