@@ -863,14 +863,10 @@ static int __on_net_schedule_list(struct xenvif *vif)
 /* Must be called with net_schedule_list_lock held */
 static void remove_from_net_schedule_list(struct xenvif *vif)
 {
-	printk("mlr: before branch\n");
 	if (likely(__on_net_schedule_list(vif))) {
-		printk("mlr: branch--1\n");
 		list_del_init(&vif->schedule_list);
-		printk("mlr: branch--2\n");
 		/* mlr-begin */
 		list_del_init(&vif->priority_schedule_list);
-		printk("mlr: branch--3\n");
 		/* mlr-end */
 		xenvif_put(vif);
 	}
@@ -884,7 +880,7 @@ static struct xenvif *poll_net_schedule_list(struct xen_netbk *netbk)
 	if (list_empty(&netbk->net_schedule_list))
 		goto out;
 	
-	/* mlr-begin : poll vif from the current priority schedule list */
+	/* mlr-begin : poll vif from the current priority schedule list */	
 	printk("mlr: poll_net_schedule_list\n");	
 	if (netbk->queue_req_count >= (netbk->current_priority + 1) * (netbk->queue_num_unit)){
 		netbk->current_priority = (netbk->current_priority - 1 + DEFAULT_PRIORITY_LIST_NUM) % DEFAULT_PRIORITY_LIST_NUM;
@@ -893,7 +889,7 @@ static struct xenvif *poll_net_schedule_list(struct xen_netbk *netbk)
 	}
 	if (list_empty(&netbk->priority_schedule_list[netbk->current_priority]))
 		goto out;
-		
+	
 	vif = list_first_entry(&netbk->priority_schedule_list[netbk->current_priority], struct xenvif, priority_schedule_list);
 	netbk->queue_req_count++;
 	/* mlr-end */
@@ -2047,6 +2043,9 @@ static long calc_variance(const struct xenvif *vif){
 	int counter = 0;
 	long avg = 0;
 	long variance = 0;
+	if(list_empty(&vif->request_size_list))
+		goto out;
+	
 	MLR_DEBUG
 	list_for_each(p, &vif->request_size_list){
 		MLR_DEBUG
@@ -2079,6 +2078,8 @@ static long calc_variance(const struct xenvif *vif){
 		MLR_DEBUG
 		list_del_init(&cp->list_pointer);
 	}
+
+out:
 	MLR_DEBUG
 	atomic_set(&vif->request_size_list_lock, 1);
 	printk("mlr: calc variance for %s, avg: %ld, variance: %ld\n", vif->dev->name, avg, variance);
@@ -2088,8 +2089,10 @@ static long calc_variance(const struct xenvif *vif){
 // get the priority of the vif
 static void get_vif_priority(struct xen_netbk *netbk){
 	printk("mlr: get vif priority\n");
-	preempt_disable();
 	spin_lock_irq(&netbk->vif_list_lock);
+	if(list_empty(&netbk->vif_list))
+		goto out;
+		
 	int vif_num = netbk->netfront_count.counter;
 	long *variances = kmalloc(sizeof(long) * vif_num, GFP_KERNEL);
 	struct xenvif *viflist   = kmalloc(sizeof(struct xenvif) * vif_num, GFP_KERNEL);
@@ -2135,8 +2138,9 @@ static void get_vif_priority(struct xen_netbk *netbk){
 			i ++;
 		}
 	}
+
+out:	
 	spin_unlock_irq(&netbk->vif_list_lock);
-	preempt_enable();
 	printk("mlr: end of get vif priority\n");
 }
 
@@ -2198,7 +2202,7 @@ static int __init netback_init(void)
 		netbk->priority_timeout.data = (unsigned long)netbk;
 		netbk->priority_timeout.function = priority_readjust;
 		unsigned long next_time = jiffies + msecs_to_jiffies(10000);
-		// mod_timer(&netbk->priority_timeout, next_time);
+		mod_timer(&netbk->priority_timeout, next_time);
 		printk("mlr: end of xenback init\n");
 		/* mlr-end */
 		
