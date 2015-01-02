@@ -2098,8 +2098,8 @@ static void get_vif_priority(struct xen_netbk *netbk){
 		goto out;
 		
 	int vif_num = netbk->netfront_count.counter;
-	long *variances = kmalloc(sizeof(long) * vif_num, GFP_KERNEL);
-	struct xenvif *viflist   = kmalloc(sizeof(struct xenvif) * vif_num, GFP_KERNEL);
+	long *variances = kmalloc(sizeof(long) * vif_num, GFP_ATOMIC);
+	struct xenvif *viflist   = kmalloc(sizeof(struct xenvif) * vif_num, GFP_ATOMIC);
 	struct list_head *p;
 	int counter = 0;
 	list_for_each(p, &netbk->vif_list){
@@ -2147,6 +2147,8 @@ static void get_vif_priority(struct xen_netbk *netbk){
 
 out:	
 	// spin_unlock_irq(&netbk->vif_list_lock);
+	kfree(variances);
+	kfree(viflist);
 	printk("mlr: end of get vif priority\n");
 }
 
