@@ -2092,29 +2092,42 @@ out:
 
 // get the priority of the vif
 static void get_vif_priority(struct xen_netbk *netbk){
+	int looper = 0;
 	printk("mlr: get vif priority\n");
 	spin_lock_irq(&netbk->vif_list_lock);
 	if(list_empty(&netbk->vif_list))
 		goto out;
-		
+	
+	for(looper = 0; looper < 10; looper ++)
+		MLR_DEBUG
 	int vif_num = netbk->netfront_count.counter;
 	if(vif_num <= 0)
 		goto out;
 		
+	for(looper = 0; looper < 10; looper ++)
+		MLR_DEBUG
 	long *variances = NULL;
         while(!variances) 
         	variances = kmalloc(sizeof(long) * vif_num, GFP_ATOMIC);
-        	
+        
+        for(looper = 0; looper < 10; looper ++)
+		MLR_DEBUG
 	struct xenvif *viflist = NULL;
         while(!viflist) 
         	viflist = kmalloc(sizeof(struct xenvif) * vif_num, GFP_ATOMIC);
 
+	for(looper = 0; looper < 10; looper ++)
+		MLR_DEBUG
 	struct list_head *p;
 	int counter = 0;
 	list_for_each(p, &netbk->vif_list){
+		for(looper = 0; looper < 10; looper ++)
+			MLR_DEBUG
 		struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
 		if(!vif) break;
 		
+		for(looper = 0; looper < 10; looper ++)
+			MLR_DEBUG
 		// printk("mlr: get variance for %s\n", vif->dev->name);
 		long variance = calc_variance(vif);
 		// printk("mlr: variance for %s is %ld\n", vif->dev->name, variance);
@@ -2122,11 +2135,17 @@ static void get_vif_priority(struct xen_netbk *netbk){
 		viflist[counter]   = *vif;
 		int i = counter - 1;
 		for(; i >= 0; i--){
+			for(looper = 0; looper < 10; looper ++)
+				MLR_DEBUG
 			if(variance < variances[i]){
+				for(looper = 0; looper < 10; looper ++)
+					MLR_DEBUG
 				struct xenvif viftmp = viflist[i];
 				viflist[i] = viflist[i + 1];
 				viflist[i + 1] = viftmp;
 
+				for(looper = 0; looper < 10; looper ++)
+					MLR_DEBUG
 				long vartmp    = variances[i];
 				variances[i]     = variances[i + 1];
 				variances[i + 1] = vartmp;
@@ -2135,25 +2154,37 @@ static void get_vif_priority(struct xen_netbk *netbk){
 		counter ++;
 	}
 
+	for(looper = 0; looper < 10; looper ++)
+		MLR_DEBUG
 	if(counter > 0){
 		int i = 0;
+		for(looper = 0; looper < 10; looper ++)
+			MLR_DEBUG
 		while(i < DEFAULT_TOP_PRIORITY_RATIO * counter) {
 			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 3);
 			viflist[i].priority = 3;
 			i ++;
 		}
+		for(looper = 0; looper < 10; looper ++)
+			MLR_DEBUG
 		while(i < DEFAULT_MID_PRIORITY_RATIO * counter) {
 			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 2);
 			viflist[i].priority = 2;
 			i ++;
 		}
+		for(looper = 0; looper < 10; looper ++)
+			MLR_DEBUG
 		while(i < counter) {
 			viflist[i].priority = 1;
 			printk("mlr: change priority of %s from %d to %d\n", viflist[i].dev->name, viflist[i].priority, 1);
 			i ++;
 		}
 	}
+	for(looper = 0; looper < 10; looper ++)
+		MLR_DEBUG
         kfree(variances);
+        for(looper = 0; looper < 10; looper ++)
+		MLR_DEBUG
 	kfree(viflist);
 out:	
 	spin_unlock_irq(&netbk->vif_list_lock);
