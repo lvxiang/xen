@@ -558,18 +558,18 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
 	vif->dev = dev;
 	INIT_LIST_HEAD(&vif->schedule_list);
 	/* mlr-begin : init priority schedule list and request size list */
-	printk("mlr: init xenvif\n");
-	printk("mlr: init priority_schedule_list\n");
+	// printk("mlr: init xenvif\n");
+	// printk("mlr: init priority_schedule_list\n");
 	INIT_LIST_HEAD(&vif->priority_schedule_list);
-	printk("mlr: init request_size_list\n");
+	// printk("mlr: init request_size_list\n");
 	INIT_LIST_HEAD(&vif->request_size_list);
-	printk("mlr: init vif_list_pointer\n");
+	// printk("mlr: init vif_list_pointer\n");
 	INIT_LIST_HEAD(&vif->vif_list_pointer);
-	printk("mlr: init request_size_list_lock\n");
+	// printk("mlr: init request_size_list_lock\n");
 	vif->request_size_list_lock = 1;
-	printk("mlr: init priority\n");
+	// printk("mlr: init priority\n");
 	vif->priority = 1;
-	printk("mlr: end of xenvif initialization");
+	// printk("mlr: end of xenvif initialization");
 	/* mlr-end */
 	INIT_LIST_HEAD(&vif->notify_list);
 
