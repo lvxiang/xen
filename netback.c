@@ -2099,8 +2099,7 @@ static void get_vif_priority(struct xen_netbk *netbk){
 		goto out;
 	
 	int vif_num = netbk->netfront_count.counter;
-	if(vif_num <= 0)
-		goto out;
+	if(vif_num > 0) {
 		
         long variances[vif_num];
 	struct xenvif *viflist[vif_num];
@@ -2151,6 +2150,7 @@ static void get_vif_priority(struct xen_netbk *netbk){
 	}
         kfree(variances);
 	kfree(viflist);
+}
 out:	
 	spin_unlock_irq(&netbk->vif_list_lock);
 	printk("mlr: end of get vif priority\n");
