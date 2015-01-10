@@ -881,11 +881,11 @@ static struct xenvif *poll_net_schedule_list(struct xen_netbk *netbk)
 		goto out;
 	
 	/* mlr-begin : poll vif from the current priority schedule list */	
-	printk("mlr: poll_net_schedule_list\n");	
+	// printk("mlr: poll_net_schedule_list\n");	
 	if (netbk->queue_req_count >= (netbk->current_priority + 1) * (netbk->queue_num_unit)){
 		netbk->current_priority = (netbk->current_priority - 1 + DEFAULT_PRIORITY_LIST_NUM) % DEFAULT_PRIORITY_LIST_NUM;
 		netbk->queue_req_count = 0;
-		printk("mlr: change netbk priority to %d\n", netbk->current_priority);
+		// printk("mlr: change netbk priority to %d\n", netbk->current_priority);
 	}
 	if (list_empty(&netbk->priority_schedule_list[netbk->current_priority]))
 		goto out;
@@ -914,14 +914,14 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	struct xen_netbk *netbk = vif->netbk;
 
 	/* mlr-begin : record the size of the request */
-	printk("mlr: xen_netbk_schedule_xenvif");
+	// printk("mlr: xen_netbk_schedule_xenvif");
 	while(vif->request_size_list_lock == 0);
 	
-	long req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
-	struct long_list_node node;
-	node.val = req_size;
-	list_add(&node.list_pointer, &vif->request_size_list);
-	printk("mlr: new request size %ld\n", req_size);
+	// long req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
+	// struct long_list_node node;
+	// node.val = req_size;
+	l// ist_add(&node.list_pointer, &vif->request_size_list);
+	// printk("mlr: new request size %ld\n", req_size);
 
 	/* mlr-end */
 
@@ -1478,21 +1478,21 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 		return true;
 
 	/* mlr-begin : adjust vif->credit_bytes according to usage condition */
-	printk("mlr: credits exceeded for %s\n", vif->dev->name);
+	// printk("mlr: credits exceeded for %s\n", vif->dev->name);
 	unsigned long T_alloc = msecs_to_jiffies(vif->credit_usec / 1000);
 	unsigned long T_actu = now - vif->credit_timeout.expires;
 	unsigned long C_alloc = vif->credit_initial;
 	unsigned long C_actu = vif->credit_bytes;
-	printk("mlr: t_alloc is %ld\n", T_alloc);
-	printk("mlr: t_actu is %ld\n", T_actu);
-	printk("mlr: c_alloc is %ld\n", C_alloc);
-	printk("mlr: c_actu is %ld\n", C_actu);
+	// printk("mlr: t_alloc is %ld\n", T_alloc);
+	// printk("mlr: t_actu is %ld\n", T_actu);
+	// printk("mlr: c_alloc is %ld\n", C_alloc);
+	// printk("mlr: c_actu is %ld\n", C_actu);
 	
 
 	//low credit vm store spare credit to public_credit
 	if ((vif->credit_bytes < vif->credit_initial) && (time_after_eq(now, next_credit)))
 	{
-		printk("mlr: low credit vm store spare credit to public_credit\n");
+		// printk("mlr: low credit vm store spare credit to public_credit\n");
 		long ratio = T_actu / T_alloc;
 		if (ratio > 5)
 		{
@@ -1505,7 +1505,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	//low credit vm needs stored credit back immediately
 	if((vif->credit_bytes < vif->credit_initial) && (time_after_eq(next_credit, now)))
 	{
-		printk("mlr: low credit vm needs stored credit back immediately\n");
+		// printk("mlr: low credit vm needs stored credit back immediately\n");
 		unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc) - C_actu, C_alloc - C_actu);
 		vif->credit_bytes += add_credit;
 		atomic64_sub(add_credit, &credit_public);
@@ -1515,7 +1515,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	//high credit vm return overdraw credit to public_credit
 	if ((vif->credit_bytes > vif->credit_initial) && (credit_public.counter< 0))
 	{
-		printk("mlr: high credit vm return overdraw credit to public_credit\n");
+		// printk("mlr: high credit vm return overdraw credit to public_credit\n");
 		unsigned long reduce_credit = min((C_actu - C_alloc) / 2, 0 - credit_public.counter);
 		vif->credit_bytes -= reduce_credit;
 		atomic64_add(reduce_credit, &credit_public);
@@ -1524,7 +1524,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	//high credit vm store spare credit to public_credit
 	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(now, next_credit)))
 	{
-		printk("mlr: high credit vm store spare credit to public_credit\n");
+		// printk("mlr: high credit vm store spare credit to public_credit\n");
 		long ratio = T_actu / T_alloc;
 		if (ratio > 5)
 		{
@@ -1536,7 +1536,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	//high credit vm needs more credit
 	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(next_credit, now)))
 	{
-		printk("mlr: high credit vm needs more credit\n");
+		// printk("mlr: high credit vm needs more credit\n");
 		unsigned long add_credit = min((long) ((C_actu * T_alloc / T_actu - C_actu) / 2), credit_public.counter);
 		if (add_credit > 0)
 		{
@@ -1597,12 +1597,12 @@ static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
 
 		/* mlr-begin : switch to next priority schedule list if current priority list has no vif left */
 		if (!vif){
-			printk("mlr: current priority queue empty, switch to next\n");
+			// printk("mlr: current priority queue empty, switch to next\n");
 			spin_lock_irq(&netbk->current_priority_lock);
 			netbk->current_priority = (netbk->current_priority - 1 + DEFAULT_PRIORITY_LIST_NUM) % DEFAULT_PRIORITY_LIST_NUM;
 			netbk->queue_req_count = 0;
 			spin_unlock_irq(&netbk->current_priority_lock);
-			printk("mlr: switched to %d\n", netbk->current_priority);
+			// printk("mlr: switched to %d\n", netbk->current_priority);
 			continue;
 		}
 		/* mlr-end */
@@ -2038,7 +2038,7 @@ err:
 /* mlr-begin */
 // calculate the varaiance of request size list
 static long calc_variance(struct xenvif *vif){
-	printk("mlr: calc variance for %s\n", vif->dev->name);
+	// printk("mlr: calc variance for %s\n", vif->dev->name);
 	vif->request_size_list_lock = 0;
 	smp_mb();
 	struct list_head *p;
@@ -2048,45 +2048,45 @@ static long calc_variance(struct xenvif *vif){
 	if(list_empty(&vif->request_size_list))
 		goto out;
 	
-	MLR_DEBUG
+	// MLR_DEBUG
 	list_for_each(p, &vif->request_size_list){
-		MLR_DEBUG
+		// MLR_DEBUG
 		struct long_list_node *node = list_entry(p, struct long_list_node, list_pointer);
 		if(node != NULL){
-			MLR_DEBUG
+			// MLR_DEBUG
 			avg += node->val;
 			counter ++;
 		}
 	}
-	MLR_DEBUG
+	// MLR_DEBUG
 	if(counter > 0){
-		MLR_DEBUG
+		// MLR_DEBUG
 		avg = avg / counter;
-		MLR_DEBUG
+		// MLR_DEBUG
 		list_for_each(p, &vif->request_size_list){
-			MLR_DEBUG
+			// MLR_DEBUG
 			struct long_list_node *node = list_entry(p, struct long_list_node, list_pointer);
-			MLR_DEBUG
+			// MLR_DEBUG
 			variance += (node->val - avg)*(node->val - avg);
 		}
-		MLR_DEBUG
+		// MLR_DEBUG
 		variance = variance / counter;
 	}
 	// TODO clean up the request size list for next timer
 	struct long_list_node *cp;
 	struct long_list_node *np;
-	MLR_DEBUG
+	// MLR_DEBUG
 	list_for_each_entry_safe(cp, np, &vif->request_size_list, list_pointer){
-		MLR_DEBUG
+		// MLR_DEBUG
 		list_del(&cp->list_pointer);
 		kfree(cp);
 	}
 
 out:
-	MLR_DEBUG
+	// MLR_DEBUG
 	vif->request_size_list_lock = 1;
 	smp_mb();
-	printk("mlr: calc variance for %s, avg: %ld, variance: %ld\n", vif->dev->name, avg, variance);
+	// printk("mlr: calc variance for %s, avg: %ld, variance: %ld\n", vif->dev->name, avg, variance);
 	return variance;
 }
 
@@ -2198,12 +2198,12 @@ static int __init netback_init(void)
 		struct xen_netbk *netbk = &xen_netbk[group];
 
 		/* mlr-begin : initialize */		
-		printk("mlr: xenback init\n");
+		// printk("mlr: xenback init\n");
 		netbk->current_priority = DEFAULT_PRIORITY_LIST_NUM - 1;		
 		netbk->queue_num_unit = DEFAULT_PRIORITY_LIST_UNIT;
 
 		INIT_LIST_HEAD(&netbk->vif_list);
-		printk("mlr: xenback init, init priority schedule lists\n"); 
+		// printk("mlr: xenback init, init priority schedule lists\n"); 
 		int k = 0;
 		for(; k < DEFAULT_PRIORITY_LIST_NUM; k ++){
 			INIT_LIST_HEAD(&netbk->priority_schedule_list[k]);
@@ -2214,8 +2214,8 @@ static int __init netback_init(void)
 		netbk->priority_timeout.data = (unsigned long)netbk;
 		netbk->priority_timeout.function = priority_readjust;
 		// unsigned long next_time = jiffies + msecs_to_jiffies(10000);
-		add_timer(&netbk->priority_timeout);
-		printk("mlr: end of xenback init\n");
+		// add_timer(&netbk->priority_timeout);
+		// printk("mlr: end of xenback init\n");
 		/* mlr-end */
 		
 		skb_queue_head_init(&netbk->rx_queue);
