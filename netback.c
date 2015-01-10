@@ -2093,15 +2093,21 @@ out:
 // get the priority of the vif
 static void get_vif_priority(struct xen_netbk *netbk){
 	printk("mlr: get vif priority\n");
-	// spin_lock_irq(&netbk->vif_list_lock);
+	spin_lock_irq(&netbk->vif_list_lock);
 	if(list_empty(&netbk->vif_list))
 		goto out;
 		
 	int vif_num = netbk->netfront_count.counter;
+	if(vif_num <= 0)
+		goto out;
+		
 	long *variances = NULL;
-        while(!variances) variances = kmalloc(sizeof(long) * vif_num, GFP_ATOMIC);
+        while(!variances) 
+        	variances = kmalloc(sizeof(long) * vif_num, GFP_ATOMIC);
+        	
 	struct xenvif *viflist = NULL;
-        while(!viflist) viflist = kmalloc(sizeof(struct xenvif) * vif_num, GFP_ATOMIC);
+        while(!viflist) 
+        	viflist = kmalloc(sizeof(struct xenvif) * vif_num, GFP_ATOMIC);
 
 	struct list_head *p;
 	int counter = 0;
@@ -2109,9 +2115,9 @@ static void get_vif_priority(struct xen_netbk *netbk){
 		struct xenvif *vif = list_entry(p, struct xenvif, vif_list_pointer);
 		if(!vif) break;
 		
-		printk("mlr: get variance for %s\n", vif->dev->name);
+		// printk("mlr: get variance for %s\n", vif->dev->name);
 		long variance = calc_variance(vif);
-		printk("mlr: variance for %s is %ld\n", vif->dev->name, variance);
+		// printk("mlr: variance for %s is %ld\n", vif->dev->name, variance);
 		variances[counter] = variance;
 		viflist[counter]   = *vif;
 		int i = counter - 1;
@@ -2150,7 +2156,7 @@ static void get_vif_priority(struct xen_netbk *netbk){
         kfree(variances);
 	kfree(viflist);
 out:	
-	// spin_unlock_irq(&netbk->vif_list_lock);
+	spin_unlock_irq(&netbk->vif_list_lock);
 	printk("mlr: end of get vif priority\n");
 }
 
