@@ -920,7 +920,7 @@ void xen_netbk_schedule_xenvif(struct xenvif *vif)
 	// long req_size = RING_GET_REQUEST(&vif->tx, vif->tx.req_cons)->size;
 	// struct long_list_node node;
 	// node.val = req_size;
-	l// ist_add(&node.list_pointer, &vif->request_size_list);
+	// ist_add(&node.list_pointer, &vif->request_size_list);
 	// printk("mlr: new request size %ld\n", req_size);
 
 	/* mlr-end */
