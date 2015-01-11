@@ -1478,7 +1478,7 @@ unsigned long now = jiffies;
 		return true;
 
 	/* mlr-begin : adjust vif->credit_bytes according to usage condition */
-	printk("mlr: credits exceeded for %s\n", vif->dev->name);
+	// printk("mlr: credits exceeded for %s\n", vif->dev->name);
 	unsigned long T_alloc = vif->credit_usec / 1000;
 	unsigned long T_actu = jiffies_to_msecs(now) - jiffies_to_msecs(vif->credit_timeout.expires);
 	unsigned long C_alloc = vif->credit_initial;
@@ -1486,13 +1486,13 @@ unsigned long now = jiffies;
 	// printk("mlr: T_alloc is %ld\n", T_alloc);
 	// printk("mlr: T_actu is %ld\n", T_actu);
 	if(T_actu == 0) T_actu = 1;
-        printk("mlr: now is %ld\n", now);
-        printk("mlr: expires is %ld\n", vif->credit_timeout.expires);
+        // printk("mlr: now is %ld\n", now);
+        // printk("mlr: expires is %ld\n", vif->credit_timeout.expires);
 	// printk("mlr: t_alloc is %ld\n", T_alloc);
-	printk("mlr: t_actu is %ld\n", T_actu);
+	// printk("mlr: t_actu is %ld\n", T_actu);
 	// printk("mlr: c_alloc is %ld\n", C_alloc);
-	printk("mlr: c_actu is %ld\n", C_actu);
-	printk("mlr: public account %ld\n", credit_public.counter);
+	// printk("mlr: c_actu is %ld\n", C_actu);
+	// printk("mlr: public account %ld\n", credit_public.counter);
 
 
 	//low credit vm store spare credit to public_credit
@@ -1515,9 +1515,18 @@ unsigned long now = jiffies;
 	else if((C_actu <= C_alloc) && (time_after_eq(next_credit, now)))
 	{
 		// printk("mlr: low credit vm needs stored credit back immediately\n");
-		unsigned long add_credit = C_alloc - C_actu;
-		vif->credit_bytes = C_alloc; // fast recovery
-		atomic64_sub(add_credit, &credit_public);
+		if(C_actu < C_alloc) {
+			unsigned long add_credit = C_alloc - C_actu;
+			vif->credit_bytes = C_alloc; // fast recovery
+			atomic64_sub(add_credit, &credit_public);
+		} else {
+			long ratio = T_alloc / T_actu;
+			unsigned long add_credit = min(C_actu - C_actu / ratio, credit_public.counter);
+			if(add_credit > 0) {
+				vif->credit_bytes += add_credit;
+				atomic64_sub(add_credit, &credit_public);
+			}
+		}
 	}
 
 	//high credit vm return overdraw credit to public_credit
