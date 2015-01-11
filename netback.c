@@ -1483,6 +1483,9 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	unsigned long T_actu = jiffies_to_msecs(now) - jiffies_to_msecs(vif->credit_timeout.expires);
 	unsigned long C_alloc = vif->credit_initial;
 	unsigned long C_actu = vif->credit_bytes;
+	printk("mlr: T_alloc is %ld\n", T_alloc);
+	printk("mlr: T_actu is %ld\n", T_actu);
+	if(T_alloc == 0 || T_actu == 0) goto out;
 	// printk("mlr: t_alloc is %ld\n", T_alloc);
 	// printk("mlr: t_actu is %ld\n", T_actu);
 	// printk("mlr: c_alloc is %ld\n", C_alloc);
@@ -1548,6 +1551,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	}
 	/* mlr-end */
 
+	out: 
 	/* Passed the point where we can replenish credit? */
 	if (time_after_eq(now, next_credit)) {
 		vif->credit_timeout.expires = now;
