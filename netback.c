@@ -1502,6 +1502,7 @@ unsigned long now = jiffies;
 		long ratio = T_actu / T_alloc;
 		if (ratio >= 2)
 		{
+                        if(ratio >= 5)  ratio = 5;
 			unsigned long reduce_credit = C_actu - C_actu / ratio;
 			atomic64_add(reduce_credit, &credit_public);
                         if(credit_public.counter > 1000000)
@@ -1514,12 +1515,9 @@ unsigned long now = jiffies;
 	else if((C_actu <= C_alloc) && (time_after_eq(next_credit, now)))
 	{
 		// printk("mlr: low credit vm needs stored credit back immediately\n");
-		unsigned long add_credit = min((unsigned long) (C_actu / T_actu * T_alloc) - C_actu, C_alloc - C_actu);
-                if(add_credit <= 0)
-                         add_credit = min(C_alloc / 5, credit_public.counter / 2);
-		vif->credit_bytes += add_credit;
+		unsigned long add_credit = C_alloc - C_actu;
+		vif->credit_bytes = C_alloc; // fast recovery
 		atomic64_sub(add_credit, &credit_public);
-		
 	}
 
 	//high credit vm return overdraw credit to public_credit
@@ -1540,6 +1538,7 @@ unsigned long now = jiffies;
 		long ratio = T_actu / T_alloc;
 		if (ratio >= 2)
 		{
+                        if(ratio > 5) ratio = 5;
 			long reduce_credit = C_actu - C_actu / ratio;
 			atomic64_add(reduce_credit, &credit_public);
                         if(credit_public.counter > 1000000)
