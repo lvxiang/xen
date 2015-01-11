@@ -1479,8 +1479,8 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 
 	/* mlr-begin : adjust vif->credit_bytes according to usage condition */
 	// printk("mlr: credits exceeded for %s\n", vif->dev->name);
-	unsigned long T_alloc = msecs_to_jiffies(vif->credit_usec / 1000);
-	unsigned long T_actu = now - vif->credit_timeout.expires;
+	unsigned long T_alloc = vif->credit_usec / 1000;
+	unsigned long T_actu = jiffies_to_msecs(now) - jiffies_to_msecs(vif->credit_timeout.expires);
 	unsigned long C_alloc = vif->credit_initial;
 	unsigned long C_actu = vif->credit_bytes;
 	// printk("mlr: t_alloc is %ld\n", T_alloc);
@@ -1490,30 +1490,32 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	
 
 	//low credit vm store spare credit to public_credit
-	if ((vif->credit_bytes < vif->credit_initial) && (time_after_eq(now, next_credit)))
+	if ((C_actu <= C_alloc) && (time_after_eq(now, next_credit)))
 	{
 		// printk("mlr: low credit vm store spare credit to public_credit\n");
 		long ratio = T_actu / T_alloc;
-		if (ratio > 5)
+		if (ratio >= 2)
 		{
-			long reduce_credit = C_actu - C_actu / ratio;
+			unsigned long reduce_credit = C_actu - C_actu / ratio;
 			atomic64_add(reduce_credit, &credit_public);
 			vif->credit_bytes = C_actu - reduce_credit;
 		}
 	}
 
 	//low credit vm needs stored credit back immediately
-	if((vif->credit_bytes < vif->credit_initial) && (time_after_eq(next_credit, now)))
+	else if((C_actu <= C_alloc) && (time_after_eq(next_credit, now)))
 	{
 		// printk("mlr: low credit vm needs stored credit back immediately\n");
-		unsigned long add_credit = min((long) (C_actu / T_actu * T_alloc) - C_actu, C_alloc - C_actu);
+		unsigned long add_credit = min((unsigned long) (C_actu / T_actu * T_alloc) - C_actu, C_alloc - C_actu);
+                if(add_credit <= 0)
+                         add_credit = min(C_alloc / 5, credit_public.counter / 2);
 		vif->credit_bytes += add_credit;
 		atomic64_sub(add_credit, &credit_public);
 		
 	}
 
 	//high credit vm return overdraw credit to public_credit
-	if ((vif->credit_bytes > vif->credit_initial) && (credit_public.counter< 0))
+	else if ((C_actu > C_alloc) && (credit_public.counter< 0))
 	{
 		// printk("mlr: high credit vm return overdraw credit to public_credit\n");
 		unsigned long reduce_credit = min((C_actu - C_alloc) / 2, 0 - credit_public.counter);
@@ -1522,22 +1524,22 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	}
 
 	//high credit vm store spare credit to public_credit
-	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(now, next_credit)))
+	else if ((C_actu > C_alloc) && (time_after_eq(now, next_credit)))
 	{
 		// printk("mlr: high credit vm store spare credit to public_credit\n");
 		long ratio = T_actu / T_alloc;
-		if (ratio > 5)
+		if (ratio >= 2)
 		{
 			long reduce_credit = C_actu - C_actu / ratio;
 			atomic64_add(reduce_credit, &credit_public);
-			vif->credit_bytes = C_actu - reduce_credit;
+			vif->credit_bytes -= reduce_credit;
 		}
 	}
 	//high credit vm needs more credit
-	if ((vif->credit_bytes > vif->credit_initial) && (time_after_eq(next_credit, now)))
+	else if ((C_actu > C_alloc) && (time_after_eq(next_credit, now)))
 	{
 		// printk("mlr: high credit vm needs more credit\n");
-		unsigned long add_credit = min((long) ((C_actu * T_alloc / T_actu - C_actu) / 2), credit_public.counter);
+		unsigned long add_credit = min((unsigned long) ((C_actu * T_alloc / T_actu - C_actu) / 2), credit_public.counter);
 		if (add_credit > 0)
 		{
 			vif->credit_bytes += add_credit;
@@ -1565,6 +1567,7 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
 	}
 
 	return false;
+
 }
 
 static unsigned xen_netbk_tx_build_gops(struct xen_netbk *netbk)
