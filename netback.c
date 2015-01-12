@@ -74,7 +74,7 @@ typedef unsigned int pending_ring_idx_t;
 #define INVALID_PENDING_RING_IDX (~0U)
 
 /* mlr-begin : added variable */
-static atomic64_t credit_total;
+static atomic64_t *credit_total;
 // static atomic64_t credit_left;
 // static atomic64_t credit_public;
 /* mlr-end */
@@ -219,8 +219,8 @@ void xen_netbk_add_xenvif(struct xenvif *vif)
 
         // subtract credits from total
         printk("mlr: vif %s enter\n", vif->dev->name);
-        atomic64_add(- vif->credit_initial, &credit_total);
-        printk("mlr: total credits left: %ld\n", credit_total.counter);
+        atomic64_sub(vif->credit_initial, credit_total);
+        printk("mlr: total credits left: %ld\n", credit_total->counter);
 	/* mlr-end */
 }
 
@@ -234,9 +234,9 @@ void xen_netbk_remove_xenvif(struct xenvif *vif)
 	spin_unlock_irq(&netbk->vif_list_lock);
 
         // add credits to total
-        atomic64_add(vif->credit_bytes, &credit_total);
+        atomic64_add(vif->credit_bytes, credit_total);
         printk("mlr: vif %s quit\n", vif->dev->name);
-        printk("mlr: total credits left: %ld\n", credit_total.counter);
+        printk("mlr: total credits left: %ld\n", credit_total->counter);
 	/* mlr-end */
 	atomic_dec(&netbk->netfront_count);
 }
@@ -1516,7 +1516,7 @@ unsigned long now = jiffies;
 		{
                         if(ratio >= 5)  ratio = 5;
 			unsigned long reduce_credit = C_actu - C_actu / ratio;
-			atomic64_add(reduce_credit, &credit_total);
+			atomic64_add(reduce_credit, credit_total);
 			vif->credit_bytes = C_actu - reduce_credit;
 		}
 	}
@@ -1529,26 +1529,26 @@ unsigned long now = jiffies;
 			unsigned long add_credit = C_alloc - C_actu;
 			vif->credit_bytes = C_alloc; // fast recovery
                         // this might make total negative
-			atomic64_sub(add_credit, &credit_total);
+			atomic64_sub(add_credit, credit_total);
 		} else {
 			long ratio = T_alloc / T_actu;
                         // this is for fairness, the configured initial is allocated
                         // if not much left in total, no more is assigned
-			unsigned long add_credit = min(C_actu - C_actu / ratio, credit_total.counter);
+			unsigned long add_credit = min(C_actu - C_actu / ratio, credit_total->counter);
 			if(add_credit > 0) {
 				vif->credit_bytes += add_credit;
-				atomic64_sub(add_credit, &credit_total);
+				atomic64_sub(add_credit, credit_total);
 			}
 		}
 	}
 
 	//high credit vm return overdraw credit to public_credit
-	else if ((C_actu > C_alloc) && (credit_total.counter < 0))
+	else if ((C_actu > C_alloc) && (credit_total->counter < 0))
 	{
 		// printk("mlr: high credit vm return overdraw credit to public_credit\n");
-		unsigned long reduce_credit = min((C_actu - C_alloc) / 2, 0 - credit_total.counter);
+		unsigned long reduce_credit = min((C_actu - C_alloc) / 2, 0 - credit_total->counter);
 		vif->credit_bytes -= reduce_credit;
-		atomic64_add(reduce_credit, &credit_total);
+		atomic64_add(reduce_credit, credit_total);
 	}
 
 	//high credit vm store spare credit to public_credit
@@ -1560,7 +1560,7 @@ unsigned long now = jiffies;
 		{
                         if(ratio > 5) ratio = 5;
 			long reduce_credit = C_actu - C_actu / ratio;
-			atomic64_add(reduce_credit, &credit_total);
+			atomic64_add(reduce_credit, credit_total);
 			vif->credit_bytes -= reduce_credit;
 		}
 	}
@@ -1569,11 +1569,11 @@ unsigned long now = jiffies;
 	else if ((C_actu > C_alloc) && (time_after_eq(next_credit, now)))
 	{
 		// printk("mlr: high credit vm needs more credit\n");
-		unsigned long add_credit = min((unsigned long) ((C_actu * T_alloc / T_actu - C_actu) / 2), credit_total.counter);
+		unsigned long add_credit = min((unsigned long) ((C_actu * T_alloc / T_actu - C_actu) / 2), credit_total->counter);
 		if (add_credit > 0)
 		{
 			vif->credit_bytes += add_credit;
-			atomic64_sub(add_credit, &credit_total);
+			atomic64_sub(add_credit, credit_total);
 		}
 	}
 	/* mlr-end */
@@ -2228,7 +2228,8 @@ static int __init netback_init(void)
 		return -ENOMEM;
 
         /* mlr begin */
-        atomic64_set(500000L, &credit_total);
+        credit_total = vzalloc(sizeof(atomic64_t));
+        atomic64_set(500000L, credit_total);
         /* mlr end */
 
 	for (group = 0; group < xen_netbk_group_nr; group++) {
@@ -2309,6 +2310,7 @@ failed_init:
 		kthread_stop(netbk->task);
 	}
 	vfree(xen_netbk);
+	vfree(credit_total);
 	return rc;
 
 }
@@ -2332,6 +2334,7 @@ static void __exit netback_fini(void)
 	}
 
 	vfree(xen_netbk);
+	vfree(credit_total);
 }
 module_exit(netback_fini);
 
